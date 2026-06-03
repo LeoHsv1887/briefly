@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, Home, Search, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
+import { PodcastPlayer } from '@/components/PodcastPlayer';
 import TickerBar from '@/components/TickerBar';
 import WeatherWidget from '@/components/WeatherWidget';
 import NewsCard from '@/components/NewsCard';
@@ -223,6 +224,7 @@ export default function App() {
       style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
     >
       <Header dax={dax} articleCount={filteredArticles.length} settings={settings} />
+      <PodcastPlayer />
 
       {/* Tab nav */}
       <nav className="flex border-b border-[#1e1e1e] px-4 sticky top-0 bg-[#0f0f0f] z-10 overflow-x-auto no-scrollbar">
