@@ -2,7 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
-function splitIntoChunks(text: string, maxLength: number): string[] {
+export const maxDuration = 60;
+
+function splitIntoChunks(text: string, maxLength: number = 3000): string[] {
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [text];
   const chunks: string[] = [];
   let current = '';
@@ -72,8 +74,8 @@ ${tickerLines || '(keine Marktdaten verfügbar)'}
 Schreibe jetzt das vollständige Podcast-Skript für die ${timeLabel}s-Episode.
 
 WICHTIGE REGELN:
-- Das Skript muss MINDESTENS 1.000 Wörter lang sein, besser 1.200-1.500 Wörter
-- Wähle die 5-7 wichtigsten und interessantesten Themen aus – nicht alle
+- Das Skript soll ca. 400-600 Wörter haben
+- Wähle die 3-4 wichtigsten und interessantesten Themen aus – nicht alle
 - Erkläre WARUM etwas wichtig ist, nicht nur WAS passiert ist
 - Nutze natürliche Übergänge: "Was mich dabei besonders interessiert...", "Das hängt übrigens zusammen mit...", "Und dann war da noch..."
 - Keine Bulletpoints, keine Aufzählungen – nur fließender, gesprochener Text
@@ -96,14 +98,18 @@ ${
 Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen.`;
 
   let script = '';
-  if (process.env.ANTHROPIC_API_KEY) {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not set');
     const anthropic = new Anthropic();
     const scriptResponse = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 1500,
       messages: [{ role: 'user', content: scriptPrompt }],
     });
     script = scriptResponse.content[0].type === 'text' ? scriptResponse.content[0].text : '';
+    console.log(`[Podcast] Script generated: ${script.split(' ').length} words`);
+  } catch (error) {
+    console.error('[Podcast] Script generation error:', error);
   }
 
   if (!script) {
@@ -111,10 +117,11 @@ Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen
   }
 
   // 4. Google Cloud TTS – chunk and synthesize
-  const chunks = splitIntoChunks(script, 4500);
+  const chunks = splitIntoChunks(script);
+  console.log(`[Podcast] TTS: ${chunks.length} chunk(s)`);
   const audioBuffers: Buffer[] = [];
 
-  for (const chunk of chunks) {
+  for (let i = 0; i < chunks.length; i++) {
     try {
       const ttsRes = await fetch(
         `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
@@ -122,7 +129,7 @@ Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            input: { text: chunk },
+            input: { text: chunks[i] },
             voice: {
               languageCode: 'de-DE',
               name: 'de-DE-Neural2-B',
@@ -140,8 +147,13 @@ Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen
       const ttsData = await ttsRes.json();
       if (ttsData.audioContent) {
         audioBuffers.push(Buffer.from(ttsData.audioContent, 'base64'));
+        console.log(`[Podcast] TTS chunk ${i + 1}/${chunks.length} OK`);
+      } else {
+        console.error(`[Podcast] TTS chunk ${i + 1} empty response:`, JSON.stringify(ttsData));
       }
-    } catch {}
+    } catch (error) {
+      console.error(`[Podcast] TTS chunk ${i + 1} error:`, error);
+    }
   }
 
   if (!audioBuffers.length) {
@@ -153,10 +165,12 @@ Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen
   const dateStr = new Date().toISOString().split('T')[0];
   const filename = `podcast-${isMorning ? 'morning' : 'evening'}-${dateStr}.mp3`;
 
+  console.log(`[Podcast] Uploading ${Math.round(combinedAudio.length / 1024)} KB to Blob`);
   const blob = await put(filename, combinedAudio, {
     access: 'public',
     contentType: 'audio/mpeg',
   });
+  console.log(`[Podcast] Upload OK: ${blob.url}`);
 
   // 6. Save metadata as JSON (overwrite so /latest always finds the newest)
   const metadata = {
