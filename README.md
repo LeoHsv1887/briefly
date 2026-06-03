@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Briefly
 
-## Getting Started
+Dein persönlicher, KI-kuratierter News-Feed. Eine mobile-optimierte PWA die morgens und abends alle relevanten News auf einen Blick zeigt – kuratiert von Claude AI.
 
-First, run the development server:
+## Features
+
+- **KI-Kuratierung** – Claude Haiku bewertet jeden Artikel und weist ihn einem Thema zu
+- **18 News-Quellen** – Spiegel, FAZ, Zeit, Handelsblatt, Reuters + Google News Feeds
+- **Live-Ticker** – DAX, S&P 500, BTC/USD, EUR/USD (aktualisiert alle 5 Min.)
+- **Wetter** – Aktuelles Wetter für Warendorf via Open-Meteo (kostenlos, kein API-Key)
+- **KI-Zusammenfassungen** – On-demand 3–5-Satz-Zusammenfassungen auf Knopfdruck
+- **Bookmark-Funktion** – Artikel für später speichern
+- **Suchfunktion** – Artikel nach Titel/Quelle durchsuchen
+- **Interesse-Tracking** – App lernt aus Klicks, welche Themen dir wichtig sind
+- **PWA** – Auf dem iPhone/Android-Homescreen installierbar
+
+## Technologie
+
+- Next.js 15 (App Router) + TypeScript
+- Tailwind CSS v4
+- Anthropic SDK (claude-haiku-4-5)
+- @ducanh2912/next-pwa
+- rss-parser
+
+## Lokaler Setup
+
+### 1. Dependencies installieren
+
+```bash
+npm install
+```
+
+### 2. Umgebungsvariablen setzen
+
+```bash
+cp .env.local.example .env.local
+```
+
+Trage deinen Anthropic API Key in `.env.local` ein:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+> **Ohne API Key** funktioniert die App – Artikel erhalten dann nur Default-Scores (5/10) statt KI-Bewertungen.
+
+### 3. Entwicklungsserver starten
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Öffne [http://localhost:3000](http://localhost:3000) im Browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment auf Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx vercel deploy
+```
 
-## Learn More
+Oder verbinde das Repository auf [vercel.com](https://vercel.com) und setze die Environment Variable `ANTHROPIC_API_KEY` in den Vercel Project Settings.
 
-To learn more about Next.js, take a look at the following resources:
+## Benötigte API Keys
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Service | Woher | Kosten |
+|---------|-------|--------|
+| **Anthropic** | [console.anthropic.com](https://console.anthropic.com) | Pay-as-you-go (~$0.0004/1K Tokens für Haiku) |
+| Open-Meteo (Wetter) | Kein Key nötig | Kostenlos |
+| Yahoo Finance (Ticker) | Kein Key nötig | Kostenlos (inoffiziell) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Konfiguration
 
-## Deploy on Vercel
+### Wetter-Standort ändern
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+In `app/api/weather/route.ts`:
+```typescript
+const LAT = 51.9427; // Deine Latitude
+const LON = 7.9827;  // Deine Longitude
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Eigene RSS-Feeds hinzufügen
+
+In `lib/feeds.ts` das `FEEDS`-Array erweitern:
+```typescript
+{ url: 'https://dein-feed.de/rss.xml', source: 'Mein Feed' }
+```
+
+### Cache-Zeiten anpassen
+
+- Feeds: `app/api/feeds/route.ts` → `revalidate = 1800` (30 Min.)
+- Ticker: `app/api/tickers/route.ts` → `revalidate = 300` (5 Min.)
+- Wetter: `app/api/weather/route.ts` → `revalidate = 3600` (1 Std.)
