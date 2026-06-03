@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Search, Sparkles, Star, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ChevronUp, Plus, Search, Sparkles, Star, TrendingDown, TrendingUp, X } from 'lucide-react';
 import type { FavoriteStock, HistoryPoint, StockNewsItem, StockQuote, StockSearchResult } from '@/lib/types';
+import { MarketBriefing } from '@/components/MarketBriefing';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -644,8 +645,21 @@ export default function StocksTab() {
 
   return (
     <div className="py-4">
-      {/* Search */}
-      <div className="px-[14px] mb-4 relative" ref={searchRef}>
+      {/* 1. Market Briefing */}
+      <MarketBriefing />
+
+      {/* 2. News Carousel */}
+      {news.length > 0 && (
+        <div className="mt-4">
+          <StockNewsCarousel news={news} favorites={favorites} />
+        </div>
+      )}
+
+      {/* 3. Divider */}
+      <div style={{ height: '0.5px', background: '#1a1a1a', margin: '14px 14px 0' }} />
+
+      {/* 4. Search */}
+      <div className="px-[14px] mt-4 mb-4 relative" ref={searchRef}>
         <div
           className="flex items-center gap-2"
           style={{ background: '#161616', border: '0.5px solid #222', borderRadius: 10, padding: '9px 12px' }}
@@ -693,10 +707,7 @@ export default function StocksTab() {
         )}
       </div>
 
-      {/* News Carousel */}
-      {news.length > 0 && <StockNewsCarousel news={news} favorites={favorites} />}
-
-      {/* Favorites Grid */}
+      {/* 5. Favorites Grid */}
       <p className="text-[11px] font-semibold text-[#555] uppercase tracking-widest px-[14px] mb-3 mt-2">
         Meine Favoriten
       </p>
