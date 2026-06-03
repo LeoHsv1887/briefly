@@ -3,39 +3,70 @@ import { NextResponse } from 'next/server';
 
 export const revalidate = 1800;
 
+interface QuoteResult {
+  price: number;
+  changePercent: number;
+  isPositive: boolean;
+  isMarketOpen: boolean;
+}
+
+async function fetchWithFallback(finnhubSymbol: string, yahooSymbol: string): Promise<QuoteResult> {
+  // Try Finnhub first
+  try {
+    const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(finnhubSymbol)}&token=${process.env.FINNHUB_API_KEY}`;
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    const data = await res.json();
+    const price: number = data.c && data.c !== 0 ? data.c : (data.pc ?? 0);
+    if (price > 0) {
+      const changePercent: number = data.c && data.c !== 0 ? (data.dp ?? 0) : 0;
+      return { price, changePercent, isPositive: changePercent >= 0, isMarketOpen: data.c > 0 };
+    }
+  } catch {}
+
+  // Fallback: Yahoo Finance
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=2d`;
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (meta?.regularMarketPrice) {
+      const price: number = meta.regularMarketPrice;
+      const prevClose: number = meta.previousClose ?? meta.chartPreviousClose ?? 0;
+      const changePercent = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+      return { price, changePercent, isPositive: changePercent >= 0, isMarketOpen: false };
+    }
+  } catch {}
+
+  return { price: 0, changePercent: 0, isPositive: true, isMarketOpen: false };
+}
+
 export async function GET() {
   const symbols = [
-    { key: 'dax', symbol: '^GDAXI', label: 'DAX' },
-    { key: 'sp500', symbol: '^GSPC', label: 'S&P 500' },
-    { key: 'nasdaq', symbol: '^IXIC', label: 'Nasdaq' },
-    { key: 'btc', symbol: 'BINANCE:BTCUSDT', label: 'Bitcoin' },
-    { key: 'eth', symbol: 'BINANCE:ETHUSDT', label: 'Ethereum' },
-    { key: 'gold', symbol: 'OANDA:XAU_USD', label: 'Gold' },
-    { key: 'oil', symbol: 'OANDA:BCO_USD', label: 'Öl (Brent)' },
+    { key: 'dax',    finnhub: '^GDAXI',         yahoo: '%5EGDAXI', label: 'DAX' },
+    { key: 'sp500',  finnhub: '^GSPC',           yahoo: '%5EGSPC',  label: 'S&P 500' },
+    { key: 'nasdaq', finnhub: '^IXIC',           yahoo: '%5EIXIC',  label: 'Nasdaq' },
+    { key: 'btc',    finnhub: 'BINANCE:BTCUSDT', yahoo: 'BTC-USD',  label: 'Bitcoin' },
+    { key: 'eth',    finnhub: 'BINANCE:ETHUSDT', yahoo: 'ETH-USD',  label: 'Ethereum' },
+    { key: 'gold',   finnhub: 'OANDA:XAU_USD',   yahoo: 'GC=F',     label: 'Gold' },
+    { key: 'oil',    finnhub: 'OANDA:BCO_USD',    yahoo: 'BZ=F',     label: 'Öl' },
   ];
 
   const results = await Promise.allSettled(
-    symbols.map(({ symbol }) =>
-      fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${process.env.FINNHUB_API_KEY}`,
-        { next: { revalidate: 300 } },
-      ).then((r) => r.json()),
-    ),
+    symbols.map(({ finnhub, yahoo }) => fetchWithFallback(finnhub, yahoo)),
   );
 
   const marketData = symbols.reduce<
-    Record<string, { label: string; price: string; changePercent: string; isPositive: boolean }>
+    Record<string, { label: string; price: string; changePercent: string; isPositive: boolean; isMarketOpen: boolean }>
   >((acc, { key, label }, i) => {
     const result = results[i];
-    if (result.status === 'fulfilled' && result.value?.c) {
-      const data = result.value;
-      const price: number = data.c ?? 0;
-      const changePercent: number = data.dp ?? 0;
+    if (result.status === 'fulfilled' && result.value.price > 0) {
+      const { price, changePercent, isPositive, isMarketOpen } = result.value;
       acc[key] = {
         label,
         price: price.toLocaleString('de-DE', { maximumFractionDigits: 2 }),
         changePercent: changePercent.toFixed(2),
-        isPositive: changePercent >= 0,
+        isPositive,
+        isMarketOpen,
       };
     }
     return acc;
@@ -63,23 +94,23 @@ export async function GET() {
   });
 
   const marketLines = Object.values(marketData)
-    .map((d) => `- ${d.label}: ${d.price} (${d.changePercent}%)`)
+    .map((d) => `- ${d.label}: ${d.price} (${d.isMarketOpen ? d.changePercent + '%' : 'Schluss: ' + d.changePercent + '%'})`)
     .join('\n');
 
   const headlineLines = headlines.map((h, i) => `${i + 1}. ${h}`).join('\n');
 
   const prompt = `Du bist ein erfahrener Finanzjournalist. Heute ist ${today}.
 
-Heutige Marktdaten:
+Marktdaten (teilweise Schlusskurse da Märkte aktuell geschlossen):
 ${marketLines || '(keine Daten verfügbar)'}
 
 Aktuelle Schlagzeilen:
 ${headlineLines || '(keine Schlagzeilen verfügbar)'}
 
-Schreibe ein prägnantes Markt-Briefing auf Deutsch. Erkläre konkret WAS passiert ist und WARUM – verknüpfe Kursbewegungen mit echten Ereignissen (Notenbankentscheidungen, Geopolitik, Unternehmensberichte etc.). Keine Floskeln, kein Finanzjargon.
+Schreibe ein Markt-Briefing auf Deutsch basierend auf den heutigen Schlusskursen und aktuellen Nachrichten. Erkläre konkret WAS heute passiert ist und WARUM – verknüpfe Kursbewegungen mit echten Ereignissen. Wenn Märkte gerade geschlossen sind, beziehe dich auf den heutigen Handelstag.
 
 Antworte NUR als JSON ohne Markdown oder Codeblöcke:
-{"summary":"2-3 Sätze Gesamtüberblick.","dax":"2 Sätze zu DAX und Europa.","usa":"2 Sätze zu S&P 500 und Nasdaq.","crypto":"2 Sätze zu Bitcoin und Krypto.","commodities":"2 Sätze zu Gold, Öl und Rohstoffen.","sentiment":"bullish"}`;
+{"summary":"2-3 Sätze Gesamtüberblick.","dax":"2 Sätze zu DAX und Europa mit konkretem Treiber.","usa":"2 Sätze zu S&P 500 und Nasdaq.","crypto":"2 Sätze zu Bitcoin und Krypto.","commodities":"2 Sätze zu Gold, Öl und Rohstoffen.","sentiment":"bullish"}`;
 
   let analysis = {
     summary: 'Das Briefing konnte heute nicht geladen werden.',

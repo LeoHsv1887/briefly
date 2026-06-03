@@ -8,6 +8,7 @@ interface MarketEntry {
   price: string;
   changePercent: string;
   isPositive: boolean;
+  isMarketOpen: boolean;
 }
 
 interface BriefingData {
@@ -144,10 +145,19 @@ export function MarketBriefing() {
               }}
             >
               <div style={{ fontSize: 10, color: '#3a3a3a', marginBottom: 2 }}>{m.label}</div>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#d0d0d0' }}>{m.price}</div>
-              <div style={{ fontSize: 10, marginTop: 1, color: m.isPositive ? '#22c47a' : '#e05a4b' }}>
-                {m.isPositive ? '+' : ''}
-                {m.changePercent}%
+              <div style={{ fontSize: 12, fontWeight: 500, color: m.isMarketOpen ? '#d0d0d0' : '#888' }}>
+                {m.price}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  marginTop: 1,
+                  color: m.isMarketOpen
+                    ? m.isPositive ? '#22c47a' : '#e05a4b'
+                    : m.isPositive ? '#1a6b42' : '#7a2d26',
+                }}
+              >
+                {m.isMarketOpen ? (m.isPositive ? '+' : '') + m.changePercent + '%' : 'Schluss'}
               </div>
             </div>
           ))}
