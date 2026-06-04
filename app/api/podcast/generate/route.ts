@@ -53,56 +53,145 @@ export async function GET() {
       console.error('[Podcast] Ticker error:', e)
     }
 
-    // Skript generieren
-    const scriptPrompt = `Du bist Alex, der Sprecher des persönlichen News-Podcasts "Briefly". Du sprichst wie ein erfahrener Journalist der gleichzeitig ein guter Freund ist – klug, direkt, einordnend. Kein Nachrichtensprecher-Ton, keine Moderatoren-Floskeln.
+    // Wetterdaten für Warendorf
+    let weatherDesc = 'wechselhaft'
+    let weatherTemp = '18'
+    try {
+      const weatherRes = await fetch(
+        'https://api.open-meteo.com/v1/forecast?latitude=51.9427&longitude=7.9827&current=temperature_2m,weathercode&timezone=Europe/Berlin',
+        { cache: 'no-store' }
+      )
+      const weatherData = await weatherRes.json()
+      weatherTemp = Math.round(weatherData.current?.temperature_2m ?? 18).toString()
+      const code = weatherData.current?.weathercode ?? 0
+      if (code === 0) weatherDesc = 'sonnig'
+      else if (code <= 3) weatherDesc = 'leicht bewölkt'
+      else if (code <= 48) weatherDesc = 'bewölkt'
+      else if (code <= 67) weatherDesc = 'regnerisch'
+      else if (code <= 77) weatherDesc = 'Schnee möglich'
+      else weatherDesc = 'stürmisch'
+    } catch (e) {
+      console.error('[Podcast] Weather fetch failed:', e)
+    }
 
-DATUM & KONTEXT:
-Heute ist ${today}. Es ist ${isMorning ? 'Morgen' : 'Abend'}.
+    const isHoliday = false
+    const holidayName = ''
+    const morningForecast: string | null = null
 
-VERFÜGBARE ARTIKEL (nach Relevanz sortiert):
-${topArticles.map((a: any, i: number) => `${i + 1}. [${a.topic ?? 'News'}] ${a.title}\n   Quelle: ${a.source}`).join('\n\n')}
+    const tickerLine = tickers
+      .map((t: any) => `${t.label}: ${t.value} (${t.changePercent >= 0 ? '+' : ''}${t.changePercent}%)`)
+      .join(' · ')
 
-MARKTDATEN VON HEUTE:
-${tickers.map((t: any) => `${t.label}: ${t.value} (${t.changePercent >= 0 ? '+' : ''}${t.changePercent}%)`).join(' · ')}
+    const articleList = topArticles
+      .map((a: any, i: number) => `${i + 1}. [${a.topic ?? 'News'}] ${a.title} · ${a.source}`)
+      .join('\n')
 
-DEINE AUFGABE:
-Schreibe ein Podcast-Skript von exakt 900-1100 Wörtern (entspricht 7-9 Minuten Sprechzeit).
+    const morningPrompt = `Du bist Alex, der Sprecher des persönlichen News-Podcasts "Briefly". Du klingst wie ein gut informierter, sympathischer Kollege der einem morgens beim Kaffee die wichtigsten Dinge des Tages erklärt. Kein Nachrichtensprecher-Ton. Direkt, präzise, auf Augenhöhe.
 
-AUSWAHLPRINZIP:
-Wähle NUR die 3-4 Storys die heute wirklich wichtig sind. Lieber wenige Themen tief behandeln als viele oberflächlich. Eine Story ist wichtig wenn sie: große Auswirkungen hat, viele Menschen betrifft, einen Wendepunkt darstellt oder ein Thema ist das man unbedingt verstanden haben muss.
+DATUM: ${today}
+WETTER: ${weatherDesc} in Warendorf, ${weatherTemp}°C
+${isHoliday ? `FEIERTAG: ${holidayName}` : ''}
 
-AUFBAU DES SKRIPTS:
+VERFÜGBARE ARTIKEL:
+${articleList}
 
-[INTRO - ca. 80 Wörter]
-Persönliche Begrüßung mit Namen, Datum. Kurzer "Was erwartet dich heute" - Teaser der neugierig macht. Nicht "Willkommen bei Briefly" - sondern direkt und persönlich.
+MARKTDATEN:
+${tickerLine}
 
-[MÄRKTE - ca. 150 Wörter]
-Erkläre was heute an den Märkten passiert ist und WARUM. Verbinde Zahlen mit echten Ereignissen. "Der DAX ist heute um X% gefallen, und das hat einen konkreten Grund..." Mach die Zahlen greifbar.
+---
 
-[STORY 1 - ca. 250 Wörter - Die wichtigste Story des Tages]
-Beginne mit dem Kern: Was ist passiert? Dann: Warum ist das wichtig? Was sind die Hintergründe? Was bedeutet das für den Hörer? Verwende konkrete Details, Zahlen, Namen. Kein "Experten sagen" - sondern echte Einordnung.
+AUFGABE: Schreibe das Morning Briefing. Exakt 800-1000 Wörter. Orientiere dich am Stil des Handelsblatt Morning Briefing – professionell aber persönlich, präzise aber verständlich.
 
-[STORY 2 - ca. 200 Wörter]
-Zweite wichtige Story, gleiche Tiefe.
+STRUKTUR (halte dich exakt daran):
 
-[STORY 3 - ca. 200 Wörter]
-Dritte Story - kann auch ein Thema sein das interessant ist ohne akut wichtig zu sein.
+[INTRO - 60-80 Wörter]
+"Guten Morgen Leonard, heute ist [Wochentag], der [Datum]."
+Kurzer persönlicher Einstieg über das Wetter in Warendorf. 1-2 Sätze Smalltalk – locker, nicht aufgesetzt.
+Falls heute ein Feiertag ist: kurz erwähnen.
+Dann: "Hier sind die wichtigsten Themen die du heute kennen solltest." – und direkt einsteigen.
 
-[OUTRO - ca. 80 Wörter]
-Kurzes Fazit was heute der rote Faden war. ${isMorning ? 'Motivierender Abschluss für den Tag.' : 'Ruhiger, reflektierender Abschluss.'} Kein generisches "Tschüss bis morgen".
+[POLITIK - 200-250 Wörter]
+Wähle 2-3 politische Top-Themen aus den Artikeln.
+Pro Thema: 2-4 Sätze. Was ist passiert? Wie ist es einzuordnen? Was bedeutet es?
+Kein tiefes Erklären von Grundlagen – Leonard kennt sich aus. Fokus auf Neuigkeiten und Einordnung.
+Übergänge zwischen Themen natürlich gestalten.
 
-STILREGELN - SEHR WICHTIG:
-- Schreibe wie gesprochen, nicht wie gelesen. Kurze Sätze. Gelegentlich Satzfragmente.
-- Keine Aufzählungen, keine Bulletpoints - nur fließender Text
-- Übergänge müssen natürlich sein: "Was mich dabei besonders beschäftigt...", "Das hängt direkt zusammen mit...", "Und dann ist da noch etwas..."
-- Zahlen ausschreiben: nicht "3,2%" sondern "drei Komma zwei Prozent"
-- Konkret statt vage: nicht "viele Menschen" sondern "rund 40 Millionen Haushalte"
-- Erkläre Fachbegriffe kurz wenn du sie nutzt
-- Gelegentlich eine pointierte Einschätzung: "Das ist meiner Meinung nach das wichtigste Signal der Woche"
-- Keine Sätze die mit "Also," oder "Nun," beginnen
-- Kein "Bleib informiert" oder ähnliche Radio-Floskeln am Ende
+[WIRTSCHAFT - 200-250 Wörter]
+Wähle 2-3 Wirtschafts-Themen.
+Gleiche Tiefe wie Politik. Zahlen nennen wenn relevant. Konkrete Einordnung.
+Auch hier: keine Grundlagenerklärungen, sondern Einordnung der aktuellen Entwicklung.
 
-Schreibe NUR den reinen Sprechtext. Keine Anmerkungen, keine Formatierung, keine Kapitelüberschriften.`
+[MÄRKTE & PROGNOSE - 150-180 Wörter]
+Kurzer Überblick über die aktuellen Stände: DAX, S&P 500, Nasdaq, Bitcoin, Gold, Öl.
+Dann: Was sind die wichtigsten Faktoren die den heutigen Handelstag beeinflussen werden?
+Welche Termine, Daten oder Ereignisse sollte man heute im Blick haben? (Fed-Entscheid, Quartalszahlen, etc.)
+Nicht spekulieren – aber konkrete Einschätzung was heute wichtig wird.
+
+[OUTRO - 50-60 Wörter]
+Kurzer, persönlicher Abschluss.
+"Das war dein Morning Briefing für heute. Ich wünsche dir einen erfolgreichen [Wochentag] – wir hören uns heute Abend wieder."
+Locker, nicht förmlich. Kein Radio-Abschluss.
+
+STILREGELN:
+- Zahlen immer ausschreiben: "drei Komma zwei Prozent" nicht "3,2%"
+- Kurze, klare Sätze. Gelegentlich Satzfragmente für Dynamik.
+- Kein "Experten warnen" oder "Beobachter sagen" – direkte Einordnung
+- Keine Bullet-Points oder Aufzählungen im Text
+- Fachbegriffe dürfen verwendet werden – Leonard kennt sie
+- Übergänge zwischen Abschnitten fließend gestalten
+- Ton: wie ein kluger Kollege beim Morgenkaffee
+
+Schreibe NUR den reinen Sprechtext. Keine Kapitelüberschriften, keine Formatierung.`
+
+    const eveningPrompt = `Du bist Alex, der Sprecher des persönlichen News-Podcasts "Briefly". Abend-Ton: ruhiger, reflektierender, wie ein Kollege der den Tag Revue passieren lässt.
+
+DATUM: ${today}
+MORGEN-MARKTPROGNOSE: ${morningForecast ?? 'nicht verfügbar'}
+
+VERFÜGBARE ARTIKEL:
+${articleList}
+
+MARKTDATEN (Schlusskurse):
+${tickerLine}
+
+---
+
+AUFGABE: Schreibe das Evening Briefing. Exakt 800-1000 Wörter.
+
+STRUKTUR:
+
+[INTRO - 60-80 Wörter]
+"Guten Abend Leonard, schön dass du wieder reinhörst."
+1-2 Sätze lockerer Einstieg – wie war der Tag, kurze persönliche Note.
+"Hier ist was heute wichtig war."
+
+[POLITIK - 200-250 Wörter]
+Die 2-3 wichtigsten politischen Entwicklungen des heutigen Tages.
+Rückblickend formulieren: Was hat sich heute konkret getan?
+Einordnung: Was bedeutet das für morgen, diese Woche, langfristig?
+
+[WIRTSCHAFT - 200-250 Wörter]
+Die 2-3 wichtigsten Wirtschaftsthemen des Tages.
+Gleicher Ansatz: konkret, einordnend, auf Augenhöhe.
+
+[MÄRKTE RÜCKBLICK - 150-180 Wörter]
+Wie haben sich die Märkte heute entwickelt?
+Falls eine Morgen-Prognose vorliegt: Vergleiche kurz ob die Einschätzung von heute Morgen gestimmt hat.
+Was waren die Treiber? Welche Überraschungen gab es?
+Kurzer Ausblick: Was könnte morgen relevant sein?
+
+[OUTRO - 50-60 Wörter]
+"Das war dein Evening Briefing. Ich wünsche dir einen guten und entspannten Abend – wir hören uns morgen früh wieder."
+Ruhig, persönlich, nicht förmlich.
+
+STILREGELN:
+- Gleiche Regeln wie Morning Briefing
+- Ton etwas ruhiger und reflektierender als morgens
+- Abend-Formulierungen: "heute hat sich gezeigt", "der Tag hat bestätigt", "überraschend war"
+
+Schreibe NUR den reinen Sprechtext.`
+
+    const scriptPrompt = isMorning ? morningPrompt : eveningPrompt
 
     const scriptResponse = await anthropic.messages.create({
       model: 'claude-haiku-4-5',
@@ -153,7 +242,6 @@ Schreibe NUR den reinen Sprechtext. Keine Anmerkungen, keine Formatierung, keine
         console.log(`[Podcast] Chunk ${audioBuffers.length}/${chunks.length} generated`)
       } else {
         console.error('[Podcast] TTS chunk failed:', JSON.stringify(ttsData))
-        // Fallback: andere Stimme versuchen
         const fallbackRes = await fetch(
           `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
           {
@@ -175,7 +263,6 @@ Schreibe NUR den reinen Sprechtext. Keine Anmerkungen, keine Formatierung, keine
       return NextResponse.json({ success: false, error: 'TTS failed for all chunks' }, { status: 500 })
     }
 
-    // Alle Base64-Chunks kombinieren (MP3-Dateien können einfach konkateniert werden)
     const combinedBase64 = audioBuffers.join('')
 
     console.log('[Podcast] Audio generated successfully,', audioBuffers.length, 'chunks')
