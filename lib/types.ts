@@ -24,6 +24,7 @@ export interface Article {
 export interface TickerData {
   symbol: string;
   name: string;
+  label: string;
   value: number;
   change: number;
   changePercent: number;

@@ -90,7 +90,7 @@ export default function App() {
   const techArticles       = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).slice(0, 7);
 
   const topStories = [...articles].filter(a => a.score >= 7).sort((a, b) => b.score - a.score).slice(0, 8);
-  const dax = tickers.find(t => t.name === 'DAX' || t.label === 'DAX');
+  const dax = tickers.find(t => t.label === 'DAX' || t.symbol === '^GDAXI');
 
   const goTo = (main: MainTab, bottom: BottomTab) => {
     setMainTab(main);
