@@ -6,6 +6,9 @@ export const maxDuration = 60
 
 export async function GET() {
   try {
+    console.log('[Podcast] Blob token present:', !!process.env.BLOB_READ_WRITE_TOKEN)
+    console.log('[Podcast] Blob token prefix:', process.env.BLOB_READ_WRITE_TOKEN?.slice(0, 20))
+
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const hour = new Date().getHours()
