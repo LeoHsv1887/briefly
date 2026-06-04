@@ -5,6 +5,22 @@ import { put } from '@vercel/blob'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 90
 
+function cleanScriptForTTS(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/_{1,2}(.*?)_{1,2}/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    .replace(/`{1,3}[^`]*`{1,3}/g, '')
+    .replace(/^[-–—]\s/gm, '')
+    .replace(/^[•·]\s/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[<>]/g, '')
+    .replace(/&[a-z]+;/g, '')
+    .trim()
+}
+
 function splitTextForTTS(text: string): string[] {
   const chunks: string[] = []
   const paragraphs = text.split(/\n\n+/)
@@ -205,10 +221,12 @@ Schreibe NUR den reinen Sprechtext.`
       ? scriptResponse.content[0].text
       : ''
 
-    console.log('[Podcast] Script generated:', script.length, 'chars,', script.split(' ').length, 'words')
+    const cleanScript = cleanScriptForTTS(script)
+
+    console.log('[Podcast] Script generated:', cleanScript.length, 'chars,', cleanScript.split(' ').length, 'words')
 
     // Text in Sinnabschnitte aufteilen (max 4000 Zeichen pro Request)
-    const chunks = splitTextForTTS(script)
+    const chunks = splitTextForTTS(cleanScript)
     console.log(`[Podcast] Splitting into ${chunks.length} TTS chunks`)
 
     const audioBuffers: string[] = []
@@ -271,7 +289,7 @@ Schreibe NUR den reinen Sprechtext.`
 
     const metadata = {
       title: `${isMorning ? 'Morning Brief' : 'Evening Brief'} · ${today}`,
-      duration: Math.round(script.split(' ').length / 130),
+      duration: Math.round(cleanScript.split(' ').length / 130),
       generatedAt: new Date().toISOString(),
       type: isMorning ? 'morning' : 'evening',
       audioBase64: combinedBase64,

@@ -22,14 +22,21 @@ async function scoreBatch(articles: Article[]): Promise<ScoreResult[]> {
           content: `Du bist ein strenger Nachrichten-Kurator für einen anspruchsvollen Leser.
 
 Bewerte jeden Artikel auf einer Skala 0–10 nach diesen Kriterien:
-- 9–10: Wichtiges Ereignis mit direkter Relevanz (Zinsentscheid, Wahlergebnis, Marktcrash, Tech-Durchbruch)
-- 7–8: Relevantes Update zu einem wichtigen Thema
-- 5–6: Interessant aber nicht dringend
-- 0–4: Clickbait, Wiederholung, zu spezifisch, Werbung, oder nicht relevant
+
+Score 8-10 NUR für:
+- Entscheidungen von Zentralbanken, Regierungen oder DAX/S&P-Unternehmen mit Marktrelevanz
+- Geopolitische Ereignisse mit direkter wirtschaftlicher oder sicherheitspolitischer Auswirkung
+- Marktbewegungen über 2% oder Kurseinbrüche
+- Wahlergebnisse, Rücktritt oder Ernennung wichtiger Persönlichkeiten
+- Technologie-Durchbrüche mit breiter gesellschaftlicher Relevanz (kein Hype)
+- Breaking News mit unmittelbarer Auswirkung auf Deutschland/EU
+
+Score 6-7: Interessante aber nicht dringende News, relevante Hintergründe
+Score 0-5: Routine-Meldungen, regionale Kleinnachrichten, Wiederholungen, Lifestyle, Werbung, Clickbait
 
 Themen des Nutzers: Wirtschaft & Finanzen, Politik (DE/EU), Geopolitik, Aktienmärkte, Technologie & KI, Sport
 
-Sei STRENG. Lieber 10 top-relevante Artikel als 30 mittelmäßige.
+Sei SEHR STRENG bei 8+. Maximal 20% der Artikel sollten Score 8+ erhalten.
 Artikel die dasselbe Thema wie ein bereits bewerteter Artikel behandeln: maximal Score 5.
 
 Bewerte folgende Artikel:

@@ -85,7 +85,7 @@ export default function App() {
     a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.source.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const topArticles        = articles.filter(a => a.score >= 7 && search(a)).slice(0, 7);
+  const topArticles        = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 7);
   const wirtschaftArticles = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).slice(0, 7);
   const politikArticles    = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).slice(0, 7);
   const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a)).slice(0, 7);
