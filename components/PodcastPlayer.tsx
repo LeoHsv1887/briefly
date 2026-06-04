@@ -2,7 +2,11 @@
 import { useState, useRef } from 'react'
 import { Play, Pause, SkipBack, SkipForward, Mic, RefreshCw } from 'lucide-react'
 
-export function PodcastPlayer() {
+interface PodcastPlayerProps {
+  compact?: boolean
+}
+
+export function PodcastPlayer({ compact = false }: PodcastPlayerProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -20,7 +24,6 @@ export function PodcastPlayer() {
       const data = await res.json()
 
       if (data.success && data.audioBase64) {
-        // Base64 in Blob URL umwandeln
         const byteChars = atob(data.audioBase64)
         const byteArrays = []
         for (let i = 0; i < byteChars.length; i += 512) {
@@ -68,99 +71,135 @@ export function PodcastPlayer() {
     return `${m}:${sec.toString().padStart(2, '0')}`
   }
 
-  return (
-    <div style={{ margin: '12px 14px 0', background: '#161616', border: '0.5px solid #222', borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Mic size={13} color="#c48a2a" />
-        <span style={{ fontSize: 11, fontWeight: 500, color: '#c48a2a', letterSpacing: '0.06em', textTransform: 'uppercase', flex: 1 }}>
-          Briefly Podcast
-        </span>
-        {episodeInfo && (
-          <span style={{ fontSize: 10, color: '#444' }}>{episodeInfo.duration} Min.</span>
-        )}
-      </div>
+  const audioEl = (
+    <audio
+      ref={audioRef}
+      onTimeUpdate={() => {
+        if (!audioRef.current) return
+        setCurrentTime(audioRef.current.currentTime)
+        setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0)
+      }}
+      onLoadedMetadata={() => {
+        if (audioRef.current) setDuration(audioRef.current.duration)
+      }}
+      onEnded={() => setIsPlaying(false)}
+    />
+  )
 
-      <div style={{ padding: '0 14px 14px' }}>
-        {!audioUrl && !isLoading && (
-          <button
-            onClick={generateEpisode}
-            style={{
-              width: '100%', padding: '10px', borderRadius: 10,
-              background: '#1e1a10', border: '0.5px solid #c48a2a',
-              color: '#c48a2a', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: 8
-            }}
-          >
-            <Mic size={14} />
-            Episode generieren
-          </button>
-        )}
-
-        {isLoading && (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>Episode wird generiert...</div>
-            <div style={{ fontSize: 11, color: '#333' }}>Das dauert ca. 30-60 Sekunden</div>
+  if (compact) {
+    return (
+      <>
+        <div style={{ background: '#161616', border: '0.5px solid #222', borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#1e1a10', border: '0.5px solid #c48a2a33', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Mic size={16} color="#c48a2a" />
           </div>
-        )}
-
-        {audioUrl && episodeInfo && (
-          <>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>{episodeInfo.title}</div>
-
-            <div
-              style={{ height: 3, background: '#1e1e1e', borderRadius: 2, marginBottom: 6, cursor: 'pointer' }}
-              onClick={(e) => {
-                if (!audioRef.current) return
-                const rect = e.currentTarget.getBoundingClientRect()
-                audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration
-              }}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 500, color: '#c48a2a', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              {isLoading ? 'Wird generiert…' : episodeInfo?.type === 'morning' ? 'Morning Brief' : episodeInfo ? 'Evening Brief' : 'Briefly Podcast'}
+            </div>
+            <div style={{ fontSize: 12, color: '#666', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {isLoading ? 'Das dauert ca. 30-60 Sekunden' : episodeInfo?.title ?? 'Noch keine Episode generiert'}
+            </div>
+          </div>
+          {audioUrl && !isLoading && (
+            <button
+              onClick={togglePlay}
+              style={{ width: 28, height: 28, borderRadius: '50%', background: '#c48a2a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >
-              <div style={{ height: '100%', width: `${progress}%`, background: '#c48a2a', borderRadius: 2 }} />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#333', marginBottom: 12 }}>
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
-              <button onClick={() => skip(-15)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555' }}>
-                <SkipBack size={20} />
-              </button>
-              <button
-                onClick={togglePlay}
-                style={{ width: 44, height: 44, borderRadius: '50%', background: '#c48a2a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {isPlaying ? <Pause size={20} color="#0f0f0f" /> : <Play size={20} color="#0f0f0f" fill="#0f0f0f" />}
-              </button>
-              <button onClick={() => skip(15)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555' }}>
-                <SkipForward size={20} />
-              </button>
-            </div>
-
+              {isPlaying ? <Pause size={12} color="#0f0f0f" /> : <Play size={12} color="#0f0f0f" fill="#0f0f0f" />}
+            </button>
+          )}
+          {!audioUrl && !isLoading && (
             <button
               onClick={generateEpisode}
-              style={{ width: '100%', marginTop: 12, padding: '6px', borderRadius: 8, background: 'transparent', border: '0.5px solid #222', color: '#444', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              style={{ padding: '5px 10px', borderRadius: 8, background: '#1e1a10', border: '0.5px solid #c48a2a44', color: '#c48a2a', fontSize: 11, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}
             >
-              <RefreshCw size={11} /> Neue Episode
+              Generieren
             </button>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+        {audioEl}
+      </>
+    )
+  }
 
-      <audio
-        ref={audioRef}
-        onTimeUpdate={() => {
-          if (!audioRef.current) return
-          setCurrentTime(audioRef.current.currentTime)
-          setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0)
-        }}
-        onLoadedMetadata={() => {
-          if (audioRef.current) setDuration(audioRef.current.duration)
-        }}
-        onEnded={() => setIsPlaying(false)}
-      />
-    </div>
+  return (
+    <>
+      <div style={{ margin: '12px 14px 0', background: '#161616', border: '0.5px solid #222', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Mic size={13} color="#c48a2a" />
+          <span style={{ fontSize: 11, fontWeight: 500, color: '#c48a2a', letterSpacing: '0.06em', textTransform: 'uppercase', flex: 1 }}>
+            Briefly Podcast
+          </span>
+          {episodeInfo && (
+            <span style={{ fontSize: 10, color: '#444' }}>{episodeInfo.duration} Min.</span>
+          )}
+        </div>
+
+        <div style={{ padding: '0 14px 14px' }}>
+          {!audioUrl && !isLoading && (
+            <button
+              onClick={generateEpisode}
+              style={{ width: '100%', padding: '10px', borderRadius: 10, background: '#1e1a10', border: '0.5px solid #c48a2a', color: '#c48a2a', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <Mic size={14} />
+              Episode generieren
+            </button>
+          )}
+
+          {isLoading && (
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 6 }}>Episode wird generiert...</div>
+              <div style={{ fontSize: 11, color: '#333' }}>Das dauert ca. 30-60 Sekunden</div>
+            </div>
+          )}
+
+          {audioUrl && episodeInfo && (
+            <>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>{episodeInfo.title}</div>
+
+              <div
+                style={{ height: 3, background: '#1e1e1e', borderRadius: 2, marginBottom: 6, cursor: 'pointer' }}
+                onClick={(e) => {
+                  if (!audioRef.current) return
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  audioRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration
+                }}
+              >
+                <div style={{ height: '100%', width: `${progress}%`, background: '#c48a2a', borderRadius: 2 }} />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#333', marginBottom: 12 }}>
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+                <button onClick={() => skip(-15)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555' }}>
+                  <SkipBack size={20} />
+                </button>
+                <button
+                  onClick={togglePlay}
+                  style={{ width: 44, height: 44, borderRadius: '50%', background: '#c48a2a', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  {isPlaying ? <Pause size={20} color="#0f0f0f" /> : <Play size={20} color="#0f0f0f" fill="#0f0f0f" />}
+                </button>
+                <button onClick={() => skip(15)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#555' }}>
+                  <SkipForward size={20} />
+                </button>
+              </div>
+
+              <button
+                onClick={generateEpisode}
+                style={{ width: '100%', marginTop: 12, padding: '6px', borderRadius: 8, background: 'transparent', border: '0.5px solid #222', color: '#444', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <RefreshCw size={11} /> Neue Episode
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {audioEl}
+    </>
   )
 }
