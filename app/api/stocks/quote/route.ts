@@ -1,57 +1,49 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { StockQuote } from '@/lib/types';
+import { NextResponse } from 'next/server'
+import { fetchYahooQuote } from '@/lib/yahoo-finance'
 
-// Known XETRA symbols that need .DE suffix for Alpha Vantage
-const XETRA = new Set([
-  'SAP', 'VOW3', 'BMW', 'MBG', 'ADS', 'DTE', 'ALV', 'MUV2', 'SIE',
-  'BAS', 'BAYN', 'DBK', 'LIN', 'RWE', 'EON', 'HEN3', 'FRE', 'CON',
-  'INF', 'MTX', 'ZAL', 'BEI', 'DPW', 'HAL', 'HEI', 'IFX', 'MRK',
-  'NDA', 'PUM', 'QIA', 'SAX', 'SHL', 'SY1', 'VNA', 'WDI',
-]);
+export const revalidate = 300
 
-function resolveSymbol(symbol: string): string {
-  const base = symbol.toUpperCase().replace(/\.DE$/, '');
-  return XETRA.has(base) ? `${base}.DE` : symbol.toUpperCase();
+const GERMAN_STOCKS = new Set([
+  'SAP', 'VOW3', 'BMW', 'MBG', 'SIE', 'ALV', 'MUV2', 'DBK', 'DTE', 'BAS',
+  'BAYN', 'RWE', 'EON', 'HEN3', 'ADS', 'LIN', 'FRE', 'CON', 'INF', 'MTX',
+  'ZAL', 'BEI', 'DPW', 'HAL', 'HEI', 'IFX', 'MRK', 'NDA', 'PUM', 'QIA',
+  'SHL', 'VNA',
+])
+
+function getYahooSymbol(symbol: string): string {
+  const base = symbol.toUpperCase().replace(/\.DE$/, '')
+  if (GERMAN_STOCKS.has(base)) return `${base}.DE`
+  if (symbol.includes('.')) return symbol
+  return symbol
 }
 
-export async function GET(request: NextRequest) {
-  const raw = request.nextUrl.searchParams.get('symbol');
-  if (!raw) return NextResponse.json({ error: 'symbol required' }, { status: 400 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const raw = searchParams.get('symbol')
 
-  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 503 });
-
-  const symbol = resolveSymbol(raw);
-  const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`;
-
-  try {
-    const res = await fetch(url, { next: { revalidate: 300 } });
-    const data = await res.json();
-    const q = data['Global Quote'];
-
-    if (!q || !q['05. price']) {
-      return NextResponse.json({ error: 'No data for symbol' }, { status: 404 });
-    }
-
-    const price = parseFloat(q['05. price']);
-    const change = parseFloat(q['09. change']);
-    const changePercent = parseFloat((q['10. change percent'] as string).replace('%', ''));
-
-    const quote: StockQuote = {
-      symbol: raw.toUpperCase(),
-      price,
-      change,
-      changePercent,
-      open: parseFloat(q['02. open']),
-      high: parseFloat(q['03. high']),
-      low: parseFloat(q['04. low']),
-      volume: parseInt(q['06. volume'], 10),
-      prevClose: parseFloat(q['08. previous close']),
-      isPositive: change >= 0,
-    };
-    return NextResponse.json(quote);
-  } catch (err) {
-    console.error('[Stocks/Quote]', err);
-    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
+  if (!raw) {
+    return NextResponse.json({ error: 'Symbol required' }, { status: 400 })
   }
+
+  const yahooSymbol = getYahooSymbol(raw)
+  const quote = await fetchYahooQuote(yahooSymbol, raw.toUpperCase())
+
+  if (!quote) {
+    return NextResponse.json({ error: 'Quote not found' }, { status: 404 })
+  }
+
+  return NextResponse.json({
+    symbol: raw.toUpperCase(),
+    price: quote.price,
+    change: quote.change,
+    changePercent: parseFloat(quote.changePercent.toFixed(2)),
+    open: quote.open,
+    high: quote.high,
+    low: quote.low,
+    volume: quote.volume,
+    prevClose: quote.previousClose,
+    isPositive: quote.isPositive,
+    isMarketOpen: quote.isMarketOpen,
+    currency: quote.currency,
+  })
 }

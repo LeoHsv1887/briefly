@@ -1,30 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { StockSearchResult } from '@/lib/types';
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get('q');
-  if (!q || q.length < 1) return NextResponse.json({ results: [] });
+export const revalidate = 0
 
-  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 503 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q')
 
-  const url = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(q)}&apikey=${apiKey}`;
+  if (!q || q.length < 2) {
+    return NextResponse.json({ results: [] })
+  }
 
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
-    const data = await res.json();
-    const matches: Array<Record<string, string>> = data.bestMatches ?? [];
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&lang=de&region=DE&quotesCount=8&newsCount=0`
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: 0 }
+    })
 
-    const results: StockSearchResult[] = matches.slice(0, 6).map((m) => ({
-      symbol: m['1. symbol'] ?? '',
-      name: m['2. name'] ?? '',
-      exchange: m['4. region'] ?? '',
-      currency: m['8. currency'] ?? '',
-    }));
+    const data = await res.json()
+    const quotes = data.quotes ?? []
 
-    return NextResponse.json({ results });
-  } catch (err) {
-    console.error('[Stocks/Search]', err);
-    return NextResponse.json({ results: [] });
+    const results = quotes
+      .filter((q: any) => q.quoteType === 'EQUITY' || q.quoteType === 'INDEX' || q.quoteType === 'CRYPTOCURRENCY')
+      .slice(0, 6)
+      .map((q: any) => ({
+        symbol: q.symbol,
+        name: q.longname ?? q.shortname ?? q.symbol,
+        exchange: q.exchange ?? '',
+        currency: q.currency ?? '',
+        type: q.quoteType,
+      }))
+
+    return NextResponse.json({ results })
+  } catch (error) {
+    console.error('[Search] Error:', error)
+    return NextResponse.json({ results: [] })
   }
 }

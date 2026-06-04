@@ -1,57 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server';
-import type { HistoryPoint } from '@/lib/types';
+import { NextResponse } from 'next/server'
 
-export const revalidate = 3600;
+export const revalidate = 3600
 
-const XETRA = new Set([
-  'SAP', 'VOW3', 'BMW', 'MBG', 'ADS', 'DTE', 'ALV', 'MUV2', 'SIE',
-  'BAS', 'BAYN', 'DBK', 'LIN', 'RWE', 'EON', 'HEN3', 'FRE', 'CON',
-  'INF', 'MTX', 'ZAL', 'BEI', 'DPW', 'HAL', 'HEI', 'IFX', 'MRK',
-  'NDA', 'PUM', 'QIA', 'SHL', 'VNA',
-]);
-
-function resolveSymbol(symbol: string): string {
-  const base = symbol.toUpperCase().replace(/\.DE$/, '');
-  return XETRA.has(base) ? `${base}.DE` : symbol.toUpperCase();
+const RANGE_MAP: Record<string, { range: string; interval: string }> = {
+  '1W': { range: '5d', interval: '1d' },
+  '1M': { range: '1mo', interval: '1d' },
+  '3M': { range: '3mo', interval: '1d' },
+  '1J': { range: '1y', interval: '1wk' },
+  '5J': { range: '5y', interval: '1mo' },
 }
 
-const RANGE_DAYS: Record<string, number> = {
-  '1W': 7, '1M': 30, '3M': 90, '1J': 365, '5J': 1825,
-};
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const symbol = searchParams.get('symbol')
+  const rangeKey = searchParams.get('range') ?? '1M'
 
-export async function GET(request: NextRequest) {
-  const raw = request.nextUrl.searchParams.get('symbol');
-  const range = request.nextUrl.searchParams.get('range') ?? '1M';
-  if (!raw) return NextResponse.json({ data: [] });
+  if (!symbol) return NextResponse.json({ data: [] }, { status: 400 })
 
-  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'API key not configured' }, { status: 503 });
-
-  const symbol = resolveSymbol(raw);
-  const days = RANGE_DAYS[range] ?? 30;
-  const outputsize = days > 100 ? 'full' : 'compact';
-
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=${outputsize}&apikey=${apiKey}`;
+  const { range, interval } = RANGE_MAP[rangeKey] ?? RANGE_MAP['1M']
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    const json = await res.json();
-    const series: Record<string, Record<string, string>> = json['Time Series (Daily)'] ?? {};
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=${interval}`
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: 3600 }
+    })
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
+    const json = await res.json()
+    const result = json?.chart?.result?.[0]
+    if (!result) return NextResponse.json({ data: [] })
 
-    const points: HistoryPoint[] = Object.entries(series)
-      .filter(([date]) => new Date(date) >= cutoff)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, vals]) => ({
-        date,
-        close: parseFloat(vals['4. close']),
-      }));
+    const timestamps: number[] = result.timestamp ?? []
+    const closes: (number | null)[] = result.indicators?.quote?.[0]?.close ?? []
 
-    return NextResponse.json({ data: points });
-  } catch (err) {
-    console.error('[Stocks/History]', err);
-    return NextResponse.json({ data: [] });
+    const data = timestamps
+      .map((ts, i) => ({
+        date: new Date(ts * 1000).toISOString().split('T')[0],
+        close: closes[i] ?? null,
+      }))
+      .filter((p): p is { date: string; close: number } => p.close !== null)
+
+    return NextResponse.json({ data })
+  } catch (error) {
+    console.error('[History] Error:', error)
+    return NextResponse.json({ data: [] })
   }
 }
