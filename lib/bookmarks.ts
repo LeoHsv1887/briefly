@@ -8,6 +8,7 @@ export interface BookmarkedArticle {
   topic: string
   publishedAt: string
   savedAt: string
+  imageUrl?: string | null
 }
 
 export function getBookmarks(): BookmarkedArticle[] {
@@ -17,7 +18,7 @@ export function getBookmarks(): BookmarkedArticle[] {
   } catch { return [] }
 }
 
-export function addBookmark(article: Omit<BookmarkedArticle, 'savedAt'>): void {
+export function addBookmark(article: BookmarkedArticle): void {
   const bookmarks = getBookmarks()
   if (bookmarks.find(b => b.id === article.id)) return
   bookmarks.unshift({ ...article, savedAt: new Date().toISOString() })

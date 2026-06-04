@@ -8,12 +8,12 @@ import { addBookmark, removeBookmark } from '@/lib/bookmarks';
 
 const TOPIC_STYLE: Record<string, { bg: string; color: string }> = {
   'Wirtschaft & Finanzen': { bg: '#1a2a1e', color: '#22c47a' },
-  'Politik DE/EU': { bg: '#1e1e2e', color: '#7b7fe0' },
-  Geopolitik: { bg: '#2a1e1a', color: '#d4844a' },
-  Aktienmärkte: { bg: '#2a2310', color: '#d4a843' },
-  'Technologie & KI': { bg: '#1e2530', color: '#5ba8e0' },
-  Sport: { bg: '#251e2a', color: '#b87bd4' },
-  Allgemein: { bg: '#1e1e1e', color: '#888' },
+  'Politik DE/EU':         { bg: '#1e1e2e', color: '#7b7fe0' },
+  Geopolitik:              { bg: '#2a1e1a', color: '#d4844a' },
+  Aktienmärkte:            { bg: '#2a2310', color: '#d4a843' },
+  'Technologie & KI':      { bg: '#1e2530', color: '#5ba8e0' },
+  Sport:                   { bg: '#251e2a', color: '#b87bd4' },
+  Allgemein:               { bg: '#1e1e1e', color: '#888' },
 };
 
 function topicStyle(topic: string) {
@@ -44,17 +44,10 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
 
   const style = topicStyle(article.topic);
 
-  const handleCardClick = () => {
-    trackInteraction(article.topic);
-  };
-
   const handleSummarize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (summary) {
-      setShowSummary((s) => !s);
-      return;
-    }
+    if (summary) { setShowSummary(s => !s); return; }
     setLoadingSummary(true);
     try {
       const res = await fetch('/api/summarize', {
@@ -89,6 +82,8 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
         source: article.source,
         topic: article.topic,
         publishedAt: article.publishedAt,
+        imageUrl: article.imageUrl ?? null,
+        savedAt: new Date().toISOString(),
       });
       setSaveScale(true);
       setTimeout(() => setSaveScale(false), 300);
@@ -103,84 +98,81 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={handleCardClick}
+      onClick={() => trackInteraction(article.topic)}
       className="block hover:bg-[#111] transition-colors"
+      style={{ padding: '12px 16px', borderBottom: '0.5px solid #181818' }}
     >
-      {/* Article image */}
-      {article.imageUrl && (
-        <div style={{ width: '100%', height: 160, overflow: 'hidden' }}>
-          <img
-            src={article.imageUrl}
-            alt={article.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
-          />
-        </div>
-      )}
+      {/* Main row: text left, thumbnail right */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
 
-      <div className="px-4 py-4">
-        {/* Meta row */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[10px] font-medium text-[#484848] uppercase tracking-wider truncate">
+        {/* Text */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Meta */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: '#484848', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {article.source}
             </span>
-            <span className="text-[10px] text-[#333]">·</span>
-            <span className="text-[10px] text-[#444]">{relativeTime(article.publishedAt)}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            <span style={{ fontSize: 10, color: '#333' }}>·</span>
+            <span style={{ fontSize: 10, color: '#444' }}>{relativeTime(article.publishedAt)}</span>
             <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-              style={{ background: style.bg, color: style.color }}
+              style={{ fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 999, background: style.bg, color: style.color }}
             >
               {article.topic}
             </span>
           </div>
-        </div>
 
-        {/* Headline */}
-        <p className="text-[14px] text-[#ccc] font-medium leading-snug mb-2">{article.title}</p>
-
-        {/* Summary */}
-        {showSummary && summary && (
-          <p className="text-[13px] text-[#888] leading-relaxed mb-2 border-l-2 border-[#333] pl-3">
-            {summary}
+          {/* Headline */}
+          <p style={{ fontSize: 13, fontWeight: 500, color: '#cccccc', lineHeight: 1.4, marginBottom: 7 }}>
+            {article.title}
           </p>
-        )}
 
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-1">
-          <button
-            onClick={handleSummarize}
-            className="flex items-center gap-1.5 text-[11px] text-[#555] hover:text-[#888] transition-colors"
-          >
-            <Sparkles size={12} strokeWidth={1.5} />
-            {loadingSummary ? (
-              <span>Wird geladen…</span>
-            ) : showSummary ? (
-              <span>Zusammenfassung ausblenden</span>
-            ) : (
-              <span>KI-Zusammenfassung</span>
-            )}
-          </button>
-          <button
-            onClick={handleSave}
-            className="p-1 hover:opacity-70 transition-opacity"
-            style={{
-              transform: saveScale ? 'scale(1.4)' : 'scale(1)',
-              transition: 'transform 0.2s ease',
-            }}
-            aria-label={isSaved ? 'Gespeichert' : 'Speichern'}
-          >
-            <Bookmark
-              size={15}
-              strokeWidth={1.8}
-              color={isSaved ? '#c48a2a' : '#444'}
-              fill={isSaved ? '#c48a2a' : 'none'}
-            />
-          </button>
+          {/* Actions row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              onClick={handleSummarize}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#555', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              <Sparkles size={12} strokeWidth={1.5} />
+              {loadingSummary ? 'Wird geladen…' : showSummary ? 'Ausblenden' : 'KI-Zusammenfassung'}
+            </button>
+            <button
+              onClick={handleSave}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                transform: saveScale ? 'scale(1.4)' : 'scale(1)',
+                transition: 'transform 0.2s ease',
+              }}
+              aria-label={isSaved ? 'Gespeichert' : 'Speichern'}
+            >
+              <Bookmark
+                size={14}
+                strokeWidth={1.8}
+                color={isSaved ? '#c48a2a' : '#444'}
+                fill={isSaved ? '#c48a2a' : 'none'}
+              />
+            </button>
+          </div>
         </div>
+
+        {/* Thumbnail */}
+        {article.imageUrl && (
+          <div style={{ width: 72, height: 72, borderRadius: 8, flexShrink: 0, overflow: 'hidden', background: '#1a1a1a' }}>
+            <img
+              src={article.imageUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Summary (expanded below the row) */}
+      {showSummary && summary && (
+        <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginTop: 8, padding: '9px 11px', background: '#141414', borderRadius: 8, borderLeft: '2px solid #222' }}>
+          {summary}
+        </div>
+      )}
     </a>
   );
 }
