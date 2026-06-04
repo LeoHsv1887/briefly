@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronUp, Plus, Search, Sparkles, Star, TrendingDown, TrendingUp, X } from 'lucide-react';
+import { ChevronRight, ChevronUp, Plus, Search, Sparkles, Star, TrendingDown, TrendingUp, X } from 'lucide-react';
 import type { FavoriteStock, HistoryPoint, StockNewsItem, StockQuote, StockSearchResult } from '@/lib/types';
 import { MarketBriefing } from '@/components/MarketBriefing';
 
@@ -291,9 +291,13 @@ function StockNewsCarousel({
 function DetailPanel({
   fav,
   quote,
+  isFavorite,
+  onToggleFavorite,
 }: {
   fav: FavoriteStock;
   quote: StockQuote | null;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const [range, setRange] = useState<HistoryRange>('1M');
   const [history, setHistory] = useState<HistoryPoint[]>([]);
@@ -333,12 +337,26 @@ function DetailPanel({
         {/* Header */}
         <div className="flex items-start justify-between mb-1">
           <div>
-            <p className="text-[13px] font-semibold text-[#e0e0e0]">
-              {fav.symbol} <span style={{ color: '#3a3a3a' }}>·</span>{' '}
-              <span className="text-[11px] font-normal" style={{ color: '#3a3a3a' }}>
-                {fav.exchange}
-              </span>
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-semibold text-[#e0e0e0]">
+                {fav.symbol} <span style={{ color: '#3a3a3a' }}>·</span>{' '}
+                <span className="text-[11px] font-normal" style={{ color: '#3a3a3a' }}>
+                  {fav.exchange}
+                </span>
+              </p>
+              <button
+                onClick={onToggleFavorite}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
+                aria-label={isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+              >
+                <Star
+                  size={14}
+                  color={isFavorite ? '#c48a2a' : '#444'}
+                  fill={isFavorite ? '#c48a2a' : 'none'}
+                  strokeWidth={1.5}
+                />
+              </button>
+            </div>
             <p className="text-[11px]" style={{ color: '#555' }}>
               {fav.name}
             </p>
@@ -529,7 +547,7 @@ export default function StocksTab() {
   const [quotesLoading, setQuotesLoading] = useState(true);
   const [sparklines, setSparklines] = useState<Record<string, HistoryPoint[]>>({});
   const [news, setNews] = useState<StockNewsItem[]>([]);
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [selectedStock, setSelectedStock] = useState<FavoriteStock | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -615,21 +633,20 @@ export default function StocksTab() {
     }, 350);
   }, []);
 
-  const addFavorite = useCallback((result: StockSearchResult) => {
-    const fav: FavoriteStock = {
-      symbol: result.symbol,
-      name: result.name,
-      exchange: result.exchange,
-    };
-    setFavorites((prev) => {
-      if (prev.some((f) => f.symbol === fav.symbol)) return prev;
-      const next = [...prev, fav];
-      saveFavorites(next);
-      return next;
-    });
+  const handleSelectResult = useCallback((result: StockSearchResult) => {
+    setSelectedStock({ symbol: result.symbol, name: result.name, exchange: result.exchange });
     setSearchQuery('');
     setShowDropdown(false);
     setSearchResults([]);
+  }, []);
+
+  const addFavoriteToList = useCallback((stock: FavoriteStock) => {
+    setFavorites((prev) => {
+      if (prev.some((f) => f.symbol === stock.symbol)) return prev;
+      const next = [...prev, stock];
+      saveFavorites(next);
+      return next;
+    });
   }, []);
 
   const removeFavorite = useCallback((symbol: string) => {
@@ -638,8 +655,17 @@ export default function StocksTab() {
       saveFavorites(next);
       return next;
     });
-    if (selectedSymbol === symbol) setSelectedSymbol(null);
-  }, [selectedSymbol]);
+  }, []);
+
+  // Fetch quote for search-selected stocks not already in favorites
+  useEffect(() => {
+    if (!selectedStock) return;
+    const sym = selectedStock.symbol;
+    if (quotes[sym]) return;
+    fetch(`/api/stocks/quote?symbol=${sym}`)
+      .then(r => r.json())
+      .then(d => { if (d?.price) setQuotes(prev => ({ ...prev, [sym]: d })); });
+  }, [selectedStock?.symbol]);
 
   const noApiKey = typeof window !== 'undefined' && !favorites.length;
 
@@ -691,17 +717,17 @@ export default function StocksTab() {
             style={{ background: '#1a1a1a', border: '0.5px solid #333' }}
           >
             {searchResults.map((r) => (
-              <button
+              <div
                 key={r.symbol}
-                onMouseDown={() => addFavorite(r)}
-                className="w-full text-left px-3 py-2.5 flex items-center justify-between hover:bg-[#222] transition-colors border-b border-[#222] last:border-0"
+                onMouseDown={() => handleSelectResult(r)}
+                className="w-full px-3 py-2.5 flex items-center justify-between hover:bg-[#222] transition-colors border-b border-[#222] last:border-0 cursor-pointer"
               >
                 <div>
-                  <span className="text-[13px] font-medium text-[#e0e0e0]">{r.symbol}</span>
-                  <span className="text-[11px] ml-2" style={{ color: '#555' }}>{r.name}</span>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#d0d0d0' }}>{r.symbol}</div>
+                  <div style={{ fontSize: 11, color: '#444', marginTop: 2 }}>{r.name} · {r.exchange}</div>
                 </div>
-                <span className="text-[10px]" style={{ color: '#3a3a3a' }}>{r.exchange}</span>
-              </button>
+                <ChevronRight size={14} color="#333" />
+              </div>
             ))}
           </div>
         )}
@@ -717,7 +743,7 @@ export default function StocksTab() {
           const badge = BADGE_COLORS[i % BADGE_COLORS.length];
           const quote = quotes[fav.symbol] ?? null;
           const sparkline = sparklines[fav.symbol] ?? [];
-          const isSelected = selectedSymbol === fav.symbol;
+          const isSelected = selectedStock?.symbol === fav.symbol;
 
           return (
             <div key={fav.symbol}>
@@ -728,7 +754,7 @@ export default function StocksTab() {
                 sparkline={sparkline}
                 isSelected={isSelected}
                 isLoading={quotesLoading}
-                onSelect={() => setSelectedSymbol(isSelected ? null : fav.symbol)}
+                onSelect={() => setSelectedStock(isSelected ? null : fav)}
                 onRemove={(e) => { e.stopPropagation(); removeFavorite(fav.symbol); }}
               />
               {/* Inline detail panel — spans full width */}
@@ -754,20 +780,28 @@ export default function StocksTab() {
       </div>
 
       {/* Detail panels (full width, after grid) */}
-      {selectedSymbol && (
+      {selectedStock && (
         <div className="mt-3">
           <DetailPanel
-            fav={favorites.find((f) => f.symbol === selectedSymbol)!}
-            quote={quotes[selectedSymbol] ?? null}
+            fav={selectedStock}
+            quote={quotes[selectedStock.symbol] ?? null}
+            isFavorite={favorites.some(f => f.symbol === selectedStock.symbol)}
+            onToggleFavorite={() => {
+              if (favorites.some(f => f.symbol === selectedStock.symbol)) {
+                removeFavorite(selectedStock.symbol);
+              } else {
+                addFavoriteToList(selectedStock);
+              }
+            }}
           />
         </div>
       )}
 
       {/* Chevron hint */}
-      {selectedSymbol && (
+      {selectedStock && (
         <div className="flex justify-center mt-1 mb-2">
           <button
-            onClick={() => setSelectedSymbol(null)}
+            onClick={() => setSelectedStock(null)}
             className="flex items-center gap-1 text-[11px]"
             style={{ color: '#3a3a3a' }}
           >
@@ -777,7 +811,7 @@ export default function StocksTab() {
         </div>
       )}
 
-      {!selectedSymbol && favorites.length > 0 && (
+      {!selectedStock && favorites.length > 0 && (
         <p className="text-center text-[10px] mt-3" style={{ color: '#2a2a2a' }}>
           Kachel antippen für Details
         </p>
