@@ -1,22 +1,31 @@
 'use client';
 
-import { ArrowRight, Bookmark, BookmarkCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { trackInteraction } from '@/lib/profile';
 
 const TOPIC_STYLE: Record<string, { bg: string; color: string }> = {
   'Wirtschaft & Finanzen': { bg: '#1a2a1e', color: '#22c47a' },
-  'Politik DE/EU': { bg: '#1e1e2e', color: '#7b7fe0' },
-  Geopolitik: { bg: '#2a1e1a', color: '#d4844a' },
-  Aktienmärkte: { bg: '#2a2310', color: '#d4a843' },
-  'Technologie & KI': { bg: '#1e2530', color: '#5ba8e0' },
-  Sport: { bg: '#251e2a', color: '#b87bd4' },
-  Allgemein: { bg: '#1e1e1e', color: '#888' },
+  'Politik DE/EU':         { bg: '#1e1e2e', color: '#7b7fe0' },
+  Geopolitik:              { bg: '#2a1e1a', color: '#d4844a' },
+  Aktienmärkte:            { bg: '#2a2310', color: '#d4a843' },
+  'Technologie & KI':      { bg: '#1e2530', color: '#5ba8e0' },
+  Sport:                   { bg: '#251e2a', color: '#b87bd4' },
+  Allgemein:               { bg: '#1e1e1e', color: '#888' },
 };
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const min = Math.floor(diff / 60_000);
+function TopicPill({ topic }: { topic: string }) {
+  const s = TOPIC_STYLE[topic] ?? TOPIC_STYLE['Allgemein'];
+  return (
+    <span style={{ fontSize: 10, fontWeight: 500, padding: '1px 6px', borderRadius: 999, background: s.bg, color: s.color }}>
+      {topic}
+    </span>
+  );
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const min = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60_000);
   if (min < 1) return 'gerade';
   if (min < 60) return `vor ${min} Min.`;
   const h = Math.floor(min / 60);
@@ -30,7 +39,27 @@ interface TopStoriesProps {
   onSave: (id: string) => void;
 }
 
-export default function TopStories({ articles, saved, onSave }: TopStoriesProps) {
+export default function TopStories({ articles }: TopStoriesProps) {
+  const [summaries, setSummaries] = useState<Record<string, string>>({});
+  const [loadingSummaries, setLoadingSummaries] = useState<Record<string, boolean>>({});
+
+  async function loadSummary(id: string) {
+    if (summaries[id] || loadingSummaries[id]) return;
+    const article = articles.find(a => a.id === id);
+    if (!article) return;
+    setLoadingSummaries(prev => ({ ...prev, [id]: true }));
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: article.title, url: article.url, content: article.title, lang: 'de' }),
+      });
+      const data = await res.json();
+      setSummaries(prev => ({ ...prev, [id]: data.summary }));
+    } catch {}
+    setLoadingSummaries(prev => ({ ...prev, [id]: false }));
+  }
+
   if (!articles.length) {
     return (
       <div className="px-4 py-12 text-center text-[#555] text-sm">
@@ -40,76 +69,64 @@ export default function TopStories({ articles, saved, onSave }: TopStoriesProps)
   }
 
   return (
-    <div className="px-4 py-4 space-y-3">
-      <p className="text-[11px] text-[#555] font-medium uppercase tracking-widest mb-4">
+    <div className="px-4 pt-4">
+      <p className="text-[11px] text-[#555] font-medium uppercase tracking-widest mb-2">
         Top-Storys des Tages
       </p>
-      {articles.map((article, i) => {
-        const style = TOPIC_STYLE[article.topic] ?? TOPIC_STYLE['Allgemein'];
-        const isSaved = saved.has(article.id);
 
-        return (
-          <div key={article.id} className="bg-[#161616] border border-[#222] rounded-xl overflow-hidden">
-            <div className="p-4">
-              {/* Label row */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {i === 0 && (
-                    <span className="text-[10px] font-semibold text-[#c48a2a] bg-[#2a2310] px-2 py-0.5 rounded-full">
-                      Top Story
-                    </span>
-                  )}
-                  <span
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                    style={{ background: style.bg, color: style.color }}
-                  >
-                    {article.topic}
-                  </span>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onSave(article.id);
-                  }}
-                  className="p-1"
-                >
-                  {isSaved ? (
-                    <BookmarkCheck size={15} color="#22c47a" strokeWidth={1.8} />
-                  ) : (
-                    <Bookmark size={15} color="#444" strokeWidth={1.8} />
-                  )}
-                </button>
+      {articles.map(article => (
+        <div
+          key={article.id}
+          style={{ padding: '12px 0', borderBottom: '0.5px solid #181818', cursor: 'pointer' }}
+          onClick={() => { trackInteraction(article.topic); window.open(article.url, '_blank'); }}
+        >
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+
+            {/* Text */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, fontWeight: 500, color: '#484848', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {article.source}
+                </span>
+                <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#2e2e2e' }} />
+                <span style={{ fontSize: 10, color: '#333' }}>{formatTimeAgo(article.publishedAt)}</span>
+                <TopicPill topic={article.topic} />
               </div>
 
-              {/* Headline */}
-              <p className="text-[16px] text-[#e8e8e8] font-semibold leading-snug mb-3">
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#cccccc', lineHeight: 1.4, marginBottom: 7 }}>
                 {article.title}
-              </p>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[#484848] uppercase font-medium">
-                    {article.source}
-                  </span>
-                  <span className="text-[11px] text-[#333]">·</span>
-                  <span className="text-[11px] text-[#444]">{relativeTime(article.publishedAt)}</span>
-                </div>
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackInteraction(article.topic)}
-                  className="flex items-center gap-1 text-[12px] text-[#888] hover:text-[#e8e8e8] transition-colors"
-                >
-                  Artikel lesen
-                  <ArrowRight size={12} strokeWidth={2} />
-                </a>
               </div>
+
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#333', cursor: 'pointer' }}
+                onClick={(e) => { e.stopPropagation(); loadSummary(article.id); }}
+              >
+                <Sparkles size={12} strokeWidth={1.5} />
+                {loadingSummaries[article.id] ? 'Lädt...' : summaries[article.id] ? 'Ausblenden' : 'KI-Zusammenfassung'}
+              </div>
+
+              {summaries[article.id] && (
+                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginTop: 8, padding: '9px 11px', background: '#141414', borderRadius: 8, borderLeft: '2px solid #222' }}>
+                  {summaries[article.id]}
+                </div>
+              )}
             </div>
+
+            {/* Thumbnail */}
+            {article.imageUrl && (
+              <div style={{ width: 72, height: 72, borderRadius: 8, flexShrink: 0, overflow: 'hidden', background: '#1a1a1a' }}>
+                <img
+                  src={article.imageUrl}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                />
+              </div>
+            )}
+
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
