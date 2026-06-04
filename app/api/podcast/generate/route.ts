@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 90
@@ -268,14 +269,28 @@ Schreibe NUR den reinen Sprechtext.`
 
     console.log('[Podcast] Audio generated successfully,', audioBuffers.length, 'chunks')
 
-    return NextResponse.json({
-      success: true,
-      audioBase64: combinedBase64,
-      title: `${isMorning ? '☀️ Morning Brief' : '🌙 Evening Brief'} · ${today}`,
+    const metadata = {
+      title: `${isMorning ? 'Morning Brief' : 'Evening Brief'} · ${today}`,
       duration: Math.round(script.split(' ').length / 130),
       generatedAt: new Date().toISOString(),
       type: isMorning ? 'morning' : 'evening',
-      script: script.slice(0, 200) + '...'
+      audioBase64: combinedBase64,
+    }
+
+    try {
+      await put(
+        `podcast-meta-${isMorning ? 'morning' : 'evening'}.json`,
+        JSON.stringify(metadata),
+        { access: 'public', contentType: 'application/json', addRandomSuffix: false }
+      )
+      console.log('[Podcast] Metadata saved to Blob')
+    } catch (e) {
+      console.error('[Podcast] Blob save failed:', e)
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...metadata,
     })
 
   } catch (error: any) {

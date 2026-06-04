@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bookmark, Home, Search, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
+import { Bookmark, Home, Mic, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
-import { PodcastPlayer } from '@/components/PodcastPlayer';
+import { BriefingTab } from '@/components/BriefingTab';
+import { PodcastBanner } from '@/components/PodcastBanner';
 import TickerBar from '@/components/TickerBar';
 import TopStories from '@/components/TopStories';
 import StocksTab from '@/components/StocksTab';
@@ -19,8 +20,8 @@ import {
 } from '@/lib/profile';
 import type { Article, TickerData, Settings } from '@/lib/types';
 
-type MainTab = 'feed' | 'top' | 'stocks' | 'bookmarks' | 'settings';
-type BottomTab = 'home' | 'stocks' | 'search' | 'bookmarks' | 'settings';
+type MainTab = 'feed' | 'top' | 'stocks' | 'bookmarks' | 'settings' | 'briefing';
+type BottomTab = 'home' | 'stocks' | 'briefing' | 'bookmarks' | 'settings';
 
 function SkeletonCard() {
   return (
@@ -42,6 +43,7 @@ const TAB_LABELS: Record<MainTab, string> = {
   top: 'Top Stories',
   stocks: 'Aktien',
   bookmarks: 'Gespeichert',
+  briefing: 'Briefing',
   settings: 'Einstellungen',
 };
 
@@ -95,7 +97,8 @@ export default function App() {
   const goTo = (main: MainTab, bottom: BottomTab) => {
     setMainTab(main);
     setBottomTab(bottom);
-    if (bottom !== 'search') { setShowSearch(false); setSearchQuery(''); }
+    setShowSearch(false);
+    setSearchQuery('');
   };
 
   return (
@@ -110,7 +113,7 @@ export default function App() {
         {(Object.keys(TAB_LABELS) as MainTab[]).map(t => (
           <button
             key={t}
-            onClick={() => goTo(t, t === 'settings' ? 'settings' : t === 'stocks' ? 'stocks' : t === 'bookmarks' ? 'bookmarks' : 'home')}
+            onClick={() => goTo(t, t === 'settings' ? 'settings' : t === 'stocks' ? 'stocks' : t === 'bookmarks' ? 'bookmarks' : t === 'briefing' ? 'briefing' : 'home')}
             className={`py-3 px-1 mr-5 text-[13px] font-medium transition-colors border-b-2 flex-shrink-0 ${
               mainTab === t ? 'text-[#e8e8e8] border-white' : 'text-[#555] border-transparent'
             }`}
@@ -143,11 +146,13 @@ export default function App() {
           <StocksTab />
         ) : mainTab === 'top' ? (
           <TopStories articles={topStories} saved={saved} onSave={handleSave} />
+        ) : mainTab === 'briefing' ? (
+          <BriefingTab />
         ) : (
           /* Feed */
           <div style={{ padding: '8px 12px 0' }}>
             {tickers.length > 0 && <TickerBar tickers={tickers} />}
-            <PodcastPlayer compact={true} />
+            <PodcastBanner />
 
             {loading ? (
               <div style={{ background: '#161616', border: '0.5px solid #222', borderRadius: 14, overflow: 'hidden', marginBottom: 8 }}>
@@ -198,21 +203,17 @@ export default function App() {
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#1a1a1a] flex justify-around items-center z-20 safe-bottom">
-        <button onClick={() => goTo('feed', 'home')} className={`p-3 transition-opacity ${bottomTab === 'home' ? 'opacity-100' : 'opacity-25'}`} aria-label="Home">
+        <button onClick={() => goTo('feed', 'home')} className={`p-3 transition-opacity ${bottomTab === 'home' ? 'opacity-100' : 'opacity-25'}`} aria-label="Feed">
           <Home size={22} strokeWidth={1.8} />
-        </button>
-        <button onClick={() => goTo('stocks', 'stocks')} className={`p-3 transition-opacity ${bottomTab === 'stocks' ? 'opacity-100' : 'opacity-25'}`} aria-label="Aktien">
-          <TrendingUp size={22} strokeWidth={1.8} />
-        </button>
-        <button
-          onClick={() => { const next = !showSearch; setShowSearch(next); if (next) goTo('feed', 'search'); else setBottomTab('home'); if (!next) setSearchQuery(''); }}
-          className={`p-3 transition-opacity ${bottomTab === 'search' ? 'opacity-100' : 'opacity-25'}`}
-          aria-label="Suche"
-        >
-          <Search size={22} strokeWidth={1.8} />
         </button>
         <button onClick={() => goTo('bookmarks', 'bookmarks')} className={`p-3 transition-opacity ${bottomTab === 'bookmarks' ? 'opacity-100' : 'opacity-25'}`} aria-label="Gespeichert">
           <Bookmark size={22} strokeWidth={1.8} />
+        </button>
+        <button onClick={() => goTo('briefing', 'briefing')} className={`p-3 transition-opacity ${bottomTab === 'briefing' ? 'opacity-100' : 'opacity-25'}`} aria-label="Briefing">
+          <Mic size={22} strokeWidth={1.8} />
+        </button>
+        <button onClick={() => goTo('stocks', 'stocks')} className={`p-3 transition-opacity ${bottomTab === 'stocks' ? 'opacity-100' : 'opacity-25'}`} aria-label="Aktien">
+          <TrendingUp size={22} strokeWidth={1.8} />
         </button>
         <button onClick={() => goTo('settings', 'settings')} className={`p-3 transition-opacity ${bottomTab === 'settings' ? 'opacity-100' : 'opacity-25'}`} aria-label="Einstellungen">
           <SettingsIcon size={22} strokeWidth={1.8} />
