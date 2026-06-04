@@ -15,6 +15,9 @@ export async function GET() {
   try {
     const quotes = await fetchMultipleQuotes(TICKER_SYMBOLS)
 
+    const germanHour = new Date().getUTCHours() + 1
+    const isDefinitelyClosed = germanHour >= 20 || germanHour < 8
+
     const tickers = quotes.map(q => ({
       symbol: q.symbol,
       name: q.label,
@@ -24,7 +27,7 @@ export async function GET() {
       change: q.change,
       changePercent: parseFloat(q.changePercent.toFixed(2)),
       isPositive: q.isPositive,
-      isMarketOpen: q.isMarketOpen,
+      isMarketOpen: !isDefinitelyClosed,
     }))
 
     return NextResponse.json({ tickers })

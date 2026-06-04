@@ -35,7 +35,9 @@ export async function fetchYahooQuote(symbol: string, label: string): Promise<Qu
     const previousClose = meta.previousClose ?? meta.chartPreviousClose ?? price
     const change = price - previousClose
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
-    const isMarketOpen = meta.marketState === 'REGULAR'
+    const isMarketOpen = meta.marketState === 'REGULAR' ||
+                         meta.marketState === 'PRE' ||
+                         !!(meta.regularMarketPrice && meta.regularMarketPrice !== meta.previousClose)
 
     return {
       symbol,
