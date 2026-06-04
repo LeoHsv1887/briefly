@@ -5,47 +5,65 @@ import { Play, Pause, Mic } from 'lucide-react'
 export function PodcastBanner() {
   const [episode, setEpisode] = useState<any>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   const hour = new Date().getHours()
   const isMorning = hour < 12
+  const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
+  const greeting = isMorning ? 'Dein Morgenbriefing ist verfügbar' : 'Dein Abendbriefing ist verfügbar'
+  const generateLabel = isMorning ? 'Morgenbriefing jetzt generieren' : 'Abendbriefing jetzt generieren'
 
   useEffect(() => {
     const type = isMorning ? 'morning' : 'evening'
     fetch(`/api/podcast/latest?type=${type}`)
       .then(r => r.json())
       .then(data => { if (data.available) setEpisode(data) })
+      .catch(() => {})
   }, [])
 
-  function togglePlay() {
-    if (!episode?.audioBase64) return
-    if (!audioRef.current?.src || audioRef.current.src === window.location.href) {
-      const byteChars = atob(episode.audioBase64)
-      const byteArrays = []
-      for (let i = 0; i < byteChars.length; i += 512) {
-        const slice = byteChars.slice(i, i + 512)
-        const bytes = new Uint8Array(slice.length)
-        for (let j = 0; j < slice.length; j++) bytes[j] = slice.charCodeAt(j)
-        byteArrays.push(bytes)
+  async function generate() {
+    setIsGenerating(true)
+    try {
+      const res = await fetch('/api/podcast/generate')
+      const data = await res.json()
+      if (data.success) {
+        setEpisode(data)
+        if (audioRef.current && data.audioBase64) {
+          const byteChars = atob(data.audioBase64)
+          const byteArrays = []
+          for (let i = 0; i < byteChars.length; i += 512) {
+            const slice = byteChars.slice(i, i + 512)
+            const bytes = new Uint8Array(slice.length)
+            for (let j = 0; j < slice.length; j++) bytes[j] = slice.charCodeAt(j)
+            byteArrays.push(bytes)
+          }
+          const blob = new Blob(byteArrays, { type: 'audio/mpeg' })
+          audioRef.current.src = URL.createObjectURL(blob)
+          audioRef.current.load()
+        }
       }
-      const blob = new Blob(byteArrays, { type: 'audio/mpeg' })
-      audioRef.current!.src = URL.createObjectURL(blob)
-      audioRef.current!.load()
-    }
-    if (isPlaying) audioRef.current!.pause()
-    else audioRef.current!.play()
+    } catch (e) { console.error(e) }
+    setIsGenerating(false)
+  }
+
+  function togglePlay() {
+    if (!audioRef.current) return
+    if (isPlaying) audioRef.current.pause()
+    else audioRef.current.play()
     setIsPlaying(!isPlaying)
   }
 
-  if (!episode) return null
-
   return (
     <div style={{
-      background: '#161616', border: '0.5px solid #2a2010',
-      borderRadius: 13, padding: '12px 14px', marginBottom: 8, cursor: 'pointer'
+      background: '#161616',
+      border: '0.5px solid #2a2010',
+      borderRadius: 13,
+      padding: '12px 14px',
+      marginBottom: 8
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 9,
           background: '#1e1a10', border: '0.5px solid #c48a2a44',
@@ -53,34 +71,65 @@ export function PodcastBanner() {
         }}>
           <Mic size={18} color="#c48a2a" />
         </div>
-        <div style={{ flex: 1 }}>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 500, color: '#c48a2a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {isMorning ? 'Morning Brief' : 'Evening Brief'} · {episode.duration} Min.
+            {typeLabel}
           </div>
           <div style={{ fontSize: 13, fontWeight: 500, color: '#d8d8d8', marginTop: 2 }}>
-            {isMorning ? 'Dein Morgenbriefing anhören' : 'Dein Abendbriefing anhören'}
+            {episode ? greeting : generateLabel}
           </div>
-          <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>
-            {new Date(episode.generatedAt).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })} · bereit zum Abspielen
-          </div>
+          {episode && (
+            <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>
+              {episode.duration} Min. · bereit zum Abspielen
+            </div>
+          )}
         </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); togglePlay() }}
-          style={{
-            width: 32, height: 32, borderRadius: '50%', background: '#c48a2a',
-            border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}
-        >
-          {isPlaying ? <Pause size={14} color="#0f0f0f" /> : <Play size={14} color="#0f0f0f" fill="#0f0f0f" />}
-        </button>
+
+        {episode ? (
+          <button
+            onClick={togglePlay}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', background: '#c48a2a',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}
+          >
+            {isPlaying
+              ? <Pause size={14} color="#0f0f0f" />
+              : <Play size={14} color="#0f0f0f" fill="#0f0f0f" />
+            }
+          </button>
+        ) : (
+          <button
+            onClick={generate}
+            disabled={isGenerating}
+            style={{
+              padding: '6px 12px', borderRadius: 8,
+              background: isGenerating ? '#1a1a1a' : '#1e1a10',
+              border: '0.5px solid #c48a2a44',
+              color: isGenerating ? '#444' : '#c48a2a',
+              fontSize: 11, fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer',
+              flexShrink: 0, whiteSpace: 'nowrap'
+            }}
+          >
+            {isGenerating ? 'Generiert...' : 'Generieren'}
+          </button>
+        )}
       </div>
-      <div style={{ height: '2.5px', background: '#1e1e1e', borderRadius: 2 }}>
-        <div style={{ height: '100%', width: `${progress}%`, background: '#c48a2a', borderRadius: 2 }} />
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#333', marginTop: 4 }}>
-        <span>0:00</span>
-        <span>{episode.duration}:00</span>
-      </div>
+
+      {episode && (
+        <>
+          <div style={{ height: '2.5px', background: '#1e1e1e', borderRadius: 2, marginTop: 10 }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: '#c48a2a', borderRadius: 2 }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#333', marginTop: 4 }}>
+            <span>0:00</span>
+            <span>{episode.duration} Min.</span>
+          </div>
+        </>
+      )}
+
       <audio
         ref={audioRef}
         onTimeUpdate={() => {

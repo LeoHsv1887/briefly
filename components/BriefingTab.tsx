@@ -115,7 +115,7 @@ export function BriefingTab() {
                 {currentType === 'morning' ? 'Kein Morning Brief verfügbar' : 'Kein Evening Brief verfügbar'}
               </div>
               <div style={{ fontSize: 12, color: '#555' }}>
-                {currentType === 'morning' ? 'Wird täglich um 8 Uhr generiert' : 'Wird täglich um 20 Uhr generiert'}
+                Noch nicht generiert – tippe auf &quot;Jetzt generieren&quot;
               </div>
             </>
           )}
