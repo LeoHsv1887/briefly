@@ -13,12 +13,16 @@ type FeedItem = {
   contentSnippet?: string;
   content?: string;
   mediaContent?: MediaContent | MediaContent[];
+  mediaThumbnail?: MediaContent;
   enclosure?: Enclosure;
 };
 
 const parser = new Parser<Record<string, unknown>, FeedItem>({
   customFields: {
-    item: [['media:content', 'mediaContent', { keepArray: false }]],
+    item: [
+      ['media:content', 'mediaContent', { keepArray: false }],
+      ['media:thumbnail', 'mediaThumbnail', { keepArray: false }],
+    ],
   },
   timeout: 12000,
   headers: {
@@ -35,6 +39,9 @@ function extractImageUrl(item: FeedItem): string | null {
     const t = item.enclosure.type ?? '';
     if (!t || t.startsWith('image/')) return item.enclosure.url;
   }
+  const mt = item.mediaThumbnail;
+  if (mt?.$?.url) return mt.$.url;
+  if (mt?.url) return mt.url;
   return null;
 }
 

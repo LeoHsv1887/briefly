@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronDown, Home, Search, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
+import { Bookmark, ChevronDown, Home, Search, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
 import { PodcastPlayer } from '@/components/PodcastPlayer';
 import TickerBar from '@/components/TickerBar';
@@ -10,6 +10,7 @@ import NewsCard from '@/components/NewsCard';
 import TopStories from '@/components/TopStories';
 import TopStoriesCarousel from '@/components/TopStoriesCarousel';
 import StocksTab from '@/components/StocksTab';
+import { BookmarksTab } from '@/components/BookmarksTab';
 import SettingsPanel from '@/components/Settings';
 import {
   getSettings,
@@ -20,8 +21,8 @@ import {
 } from '@/lib/profile';
 import type { Article, TickerData, WeatherData, Settings } from '@/lib/types';
 
-type MainTab = 'feed' | 'top' | 'stocks' | 'settings';
-type BottomTab = 'home' | 'stocks' | 'search' | 'settings';
+type MainTab = 'feed' | 'top' | 'stocks' | 'bookmarks' | 'settings';
+type BottomTab = 'home' | 'stocks' | 'search' | 'bookmarks' | 'settings';
 
 function groupByDate(articles: Article[]): Record<string, Article[]> {
   return articles.reduce<Record<string, Article[]>>((groups, article) => {
@@ -135,6 +136,7 @@ const TAB_LABELS: Record<MainTab, string> = {
   feed: 'Feed',
   top: 'Top Stories',
   stocks: 'Aktien',
+  bookmarks: 'Gespeichert',
   settings: 'Einstellungen',
 };
 
@@ -231,7 +233,7 @@ export default function App() {
         {(Object.keys(TAB_LABELS) as MainTab[]).map((t) => (
           <button
             key={t}
-            onClick={() => goTo(t, t === 'settings' ? 'settings' : t === 'stocks' ? 'stocks' : 'home')}
+            onClick={() => goTo(t, t === 'settings' ? 'settings' : t === 'stocks' ? 'stocks' : t === 'bookmarks' ? 'bookmarks' : 'home')}
             className={`py-3 px-1 mr-5 text-[13px] font-medium transition-colors border-b-2 flex-shrink-0 ${
               mainTab === t ? 'text-[#e8e8e8] border-white' : 'text-[#555] border-transparent'
             }`}
@@ -259,6 +261,8 @@ export default function App() {
       <main className="pb-24">
         {mainTab === 'settings' ? (
           <SettingsPanel settings={settings} onChange={handleSettingsChange} />
+        ) : mainTab === 'bookmarks' ? (
+          <BookmarksTab />
         ) : mainTab === 'stocks' ? (
           <StocksTab />
         ) : mainTab === 'top' ? (
@@ -337,6 +341,13 @@ export default function App() {
           aria-label="Suche"
         >
           <Search size={22} strokeWidth={1.8} />
+        </button>
+        <button
+          onClick={() => goTo('bookmarks', 'bookmarks')}
+          className={`p-3 transition-opacity ${bottomTab === 'bookmarks' ? 'opacity-100' : 'opacity-25'}`}
+          aria-label="Gespeichert"
+        >
+          <Bookmark size={22} strokeWidth={1.8} />
         </button>
         <button
           onClick={() => goTo('settings', 'settings')}

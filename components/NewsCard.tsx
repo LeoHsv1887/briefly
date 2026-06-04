@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Bookmark, BookmarkCheck, Sparkles } from 'lucide-react';
+import { Bookmark, Sparkles } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { trackInteraction } from '@/lib/profile';
+import { addBookmark, removeBookmark } from '@/lib/bookmarks';
 
 const TOPIC_STYLE: Record<string, { bg: string; color: string }> = {
   'Wirtschaft & Finanzen': { bg: '#1a2a1e', color: '#22c47a' },
@@ -39,6 +40,7 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
   const [summary, setSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [saveScale, setSaveScale] = useState(false);
 
   const style = topicStyle(article.topic);
 
@@ -79,6 +81,20 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isSaved) {
+      addBookmark({
+        id: article.id,
+        title: article.title,
+        url: article.url,
+        source: article.source,
+        topic: article.topic,
+        publishedAt: article.publishedAt,
+      });
+      setSaveScale(true);
+      setTimeout(() => setSaveScale(false), 300);
+    } else {
+      removeBookmark(article.id);
+    }
     onSave(article.id);
   };
 
@@ -88,63 +104,82 @@ export default function NewsCard({ article, isSaved, onSave, summariesInGerman }
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleCardClick}
-      className="block px-4 py-4 hover:bg-[#111] transition-colors"
+      className="block hover:bg-[#111] transition-colors"
     >
-      {/* Meta row */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] font-medium text-[#484848] uppercase tracking-wider truncate">
-            {article.source}
-          </span>
-          <span className="text-[10px] text-[#333]">·</span>
-          <span className="text-[10px] text-[#444]">{relativeTime(article.publishedAt)}</span>
+      {/* Article image */}
+      {article.imageUrl && (
+        <div style={{ width: '100%', height: 160, overflow: 'hidden' }}>
+          <img
+            src={article.imageUrl}
+            alt={article.title}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+          />
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          <span
-            className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-            style={{ background: style.bg, color: style.color }}
-          >
-            {article.topic}
-          </span>
-        </div>
-      </div>
-
-      {/* Headline */}
-      <p className="text-[14px] text-[#ccc] font-medium leading-snug mb-2">{article.title}</p>
-
-      {/* Summary */}
-      {showSummary && summary && (
-        <p className="text-[13px] text-[#888] leading-relaxed mb-2 border-l-2 border-[#333] pl-3">
-          {summary}
-        </p>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between mt-1">
-        <button
-          onClick={handleSummarize}
-          className="flex items-center gap-1.5 text-[11px] text-[#555] hover:text-[#888] transition-colors"
-        >
-          <Sparkles size={12} strokeWidth={1.5} />
-          {loadingSummary ? (
-            <span>Wird geladen…</span>
-          ) : showSummary ? (
-            <span>Zusammenfassung ausblenden</span>
-          ) : (
-            <span>KI-Zusammenfassung</span>
-          )}
-        </button>
-        <button
-          onClick={handleSave}
-          className="p-1 hover:opacity-70 transition-opacity"
-          aria-label={isSaved ? 'Gespeichert' : 'Speichern'}
-        >
-          {isSaved ? (
-            <BookmarkCheck size={15} color="#22c47a" strokeWidth={1.8} />
-          ) : (
-            <Bookmark size={15} color="#444" strokeWidth={1.8} />
-          )}
-        </button>
+      <div className="px-4 py-4">
+        {/* Meta row */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] font-medium text-[#484848] uppercase tracking-wider truncate">
+              {article.source}
+            </span>
+            <span className="text-[10px] text-[#333]">·</span>
+            <span className="text-[10px] text-[#444]">{relativeTime(article.publishedAt)}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{ background: style.bg, color: style.color }}
+            >
+              {article.topic}
+            </span>
+          </div>
+        </div>
+
+        {/* Headline */}
+        <p className="text-[14px] text-[#ccc] font-medium leading-snug mb-2">{article.title}</p>
+
+        {/* Summary */}
+        {showSummary && summary && (
+          <p className="text-[13px] text-[#888] leading-relaxed mb-2 border-l-2 border-[#333] pl-3">
+            {summary}
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between mt-1">
+          <button
+            onClick={handleSummarize}
+            className="flex items-center gap-1.5 text-[11px] text-[#555] hover:text-[#888] transition-colors"
+          >
+            <Sparkles size={12} strokeWidth={1.5} />
+            {loadingSummary ? (
+              <span>Wird geladen…</span>
+            ) : showSummary ? (
+              <span>Zusammenfassung ausblenden</span>
+            ) : (
+              <span>KI-Zusammenfassung</span>
+            )}
+          </button>
+          <button
+            onClick={handleSave}
+            className="p-1 hover:opacity-70 transition-opacity"
+            style={{
+              transform: saveScale ? 'scale(1.4)' : 'scale(1)',
+              transition: 'transform 0.2s ease',
+            }}
+            aria-label={isSaved ? 'Gespeichert' : 'Speichern'}
+          >
+            <Bookmark
+              size={15}
+              strokeWidth={1.8}
+              color={isSaved ? '#c48a2a' : '#444'}
+              fill={isSaved ? '#c48a2a' : 'none'}
+            />
+          </button>
+        </div>
       </div>
     </a>
   );

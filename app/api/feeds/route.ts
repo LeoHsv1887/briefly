@@ -19,9 +19,12 @@ export async function GET() {
     const scored = await scoreAndAssignTopics(toScore);
     const filtered = scored.filter((a) => a.score >= 6);
     const clustered = await clusterAndDeduplicate(filtered);
+    const sorted = clustered.sort((a, b) =>
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
 
     return NextResponse.json({
-      articles: clustered,
+      articles: sorted,
       total: clustered.length,
       fetchedAt: new Date().toISOString(),
     });

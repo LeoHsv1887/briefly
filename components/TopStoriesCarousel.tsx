@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BarChart2, Cpu, Globe, Landmark, Pause, Play, TrendingUp, Trophy } from 'lucide-react';
+import { BarChart2, Cpu, Globe, Landmark, Pause, Play, Sparkles, TrendingUp, Trophy } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Article } from '@/lib/types';
 
@@ -10,12 +10,12 @@ const CARD_GAP = 10;
 const CARD_STEP = CARD_W + CARD_GAP;
 
 const TOPIC_FALLBACK: Record<string, { bg: string; iconColor: string; Icon: LucideIcon }> = {
-  'Aktienmärkte':       { bg: '#1c1a14', iconColor: '#3a3010', Icon: TrendingUp },
-  'Wirtschaft & Finanzen': { bg: '#141a18', iconColor: '#0e2820', Icon: BarChart2 },
-  'Technologie & KI':   { bg: '#141820', iconColor: '#0e2540', Icon: Cpu },
-  'Sport':              { bg: '#18141a', iconColor: '#321040', Icon: Trophy },
-  'Politik DE/EU':      { bg: '#141c14', iconColor: '#0e280e', Icon: Landmark },
-  'Geopolitik':         { bg: '#1a1410', iconColor: '#3a2010', Icon: Globe },
+  'Aktienmärkte':           { bg: '#1c1a14', iconColor: '#3a3010', Icon: TrendingUp },
+  'Wirtschaft & Finanzen':  { bg: '#141a18', iconColor: '#0e2820', Icon: BarChart2 },
+  'Technologie & KI':       { bg: '#141820', iconColor: '#0e2540', Icon: Cpu },
+  'Sport':                  { bg: '#18141a', iconColor: '#321040', Icon: Trophy },
+  'Politik DE/EU':          { bg: '#141c14', iconColor: '#0e280e', Icon: Landmark },
+  'Geopolitik':             { bg: '#1a1410', iconColor: '#3a2010', Icon: Globe },
 };
 
 const TOPIC_PILL: Record<string, { bg: string; color: string }> = {
@@ -82,6 +82,95 @@ function CardImage({ article }: { article: Article }) {
   );
 }
 
+function CarouselCard({ article }: { article: Article }) {
+  const [summary, setSummary] = useState('');
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const pill = TOPIC_PILL[article.topic] ?? TOPIC_PILL['Allgemein'];
+
+  const handleSummarize = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (summary) { setShowSummary(s => !s); return; }
+    setLoadingSummary(true);
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: article.title, url: article.url, content: article.title, lang: 'de' }),
+      });
+      const data = await res.json();
+      setSummary(data.summary || 'Zusammenfassung nicht verfügbar.');
+      setShowSummary(true);
+    } catch {
+      setSummary('Zusammenfassung konnte nicht geladen werden.');
+      setShowSummary(true);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  return (
+    <div
+      className="flex-shrink-0 flex flex-col overflow-hidden"
+      style={{
+        width: CARD_W,
+        borderRadius: 16,
+        background: '#161616',
+        border: '0.5px solid #222',
+        scrollSnapAlign: 'start',
+      }}
+    >
+      <a href={article.url} target="_blank" rel="noopener noreferrer">
+        <CardImage article={article} />
+      </a>
+      <div className="px-3 py-2.5 flex flex-col flex-1">
+        <a href={article.url} target="_blank" rel="noopener noreferrer" className="flex flex-col flex-1">
+          <span
+            className="inline-block self-start text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-1.5"
+            style={{ background: pill.bg, color: pill.color }}
+          >
+            {article.topic}
+          </span>
+          <p
+            className="text-[13px] font-medium leading-snug mb-auto"
+            style={{ color: '#d0d0d0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
+            {article.title}
+          </p>
+          <div className="flex items-center justify-between mt-2">
+            <span
+              className="text-[10px] font-medium uppercase tracking-wide truncate"
+              style={{ color: '#484848', maxWidth: 130 }}
+            >
+              {article.source}
+            </span>
+            <span className="text-[10px]" style={{ color: '#444' }}>
+              {relTime(article.publishedAt)}
+            </span>
+          </div>
+        </a>
+
+        {/* Summary section */}
+        {showSummary && summary && (
+          <p className="text-[12px] text-[#888] leading-relaxed mt-2 border-l-2 border-[#333] pl-2">
+            {summary}
+          </p>
+        )}
+
+        <button
+          onClick={handleSummarize}
+          className="flex items-center gap-1.5 mt-2 pt-2 text-[11px] text-[#555] hover:text-[#888] transition-colors"
+          style={{ borderTop: '0.5px solid #1e1e1e' }}
+        >
+          <Sparkles size={11} strokeWidth={1.5} />
+          {loadingSummary ? 'Wird geladen…' : showSummary ? 'Ausblenden' : 'KI-Zusammenfassung'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   articles: Article[];
 }
@@ -93,7 +182,6 @@ export default function TopStoriesCarousel({ articles }: Props) {
   const [autoPlay, setAutoPlay] = useState(true);
   const [userPaused, setUserPaused] = useState(false);
 
-  // Sync dot on scroll
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -104,7 +192,6 @@ export default function TopStoriesCarousel({ articles }: Props) {
     return () => el.removeEventListener('scroll', onScroll);
   }, [articles.length]);
 
-  // Auto-play interval
   useEffect(() => {
     if (!autoPlay || userPaused || articles.length <= 1) return;
     const id = setInterval(() => {
@@ -165,51 +252,9 @@ export default function TopStoriesCarousel({ articles }: Props) {
           paddingLeft: 14,
         }}
       >
-        {articles.map((article) => {
-          const pill = TOPIC_PILL[article.topic] ?? TOPIC_PILL['Allgemein'];
-          return (
-            <a
-              key={article.id}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 flex flex-col overflow-hidden"
-              style={{
-                width: CARD_W,
-                borderRadius: 16,
-                background: '#161616',
-                border: '0.5px solid #222',
-                scrollSnapAlign: 'start',
-              }}
-            >
-              <CardImage article={article} />
-              <div className="px-3 py-2.5 flex flex-col flex-1">
-                <span
-                  className="inline-block self-start text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-1.5"
-                  style={{ background: pill.bg, color: pill.color }}
-                >
-                  {article.topic}
-                </span>
-                <p className="text-[13px] font-medium leading-snug mb-auto"
-                   style={{ color: '#d0d0d0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {article.title}
-                </p>
-                <div className="flex items-center justify-between mt-2">
-                  <span
-                    className="text-[10px] font-medium uppercase tracking-wide truncate"
-                    style={{ color: '#484848', maxWidth: 130 }}
-                  >
-                    {article.source}
-                  </span>
-                  <span className="text-[10px]" style={{ color: '#444' }}>
-                    {relTime(article.publishedAt)}
-                  </span>
-                </div>
-              </div>
-            </a>
-          );
-        })}
-        {/* trailing spacer so last card can snap flush */}
+        {articles.map((article) => (
+          <CarouselCard key={article.id} article={article} />
+        ))}
         <div className="flex-shrink-0" style={{ width: 14 }} />
       </div>
 
