@@ -2,7 +2,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
 import { fetchMultipleQuotes } from '@/lib/yahoo-finance'
 
-export const revalidate = 1800
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const BRIEFING_SYMBOLS = [
   { symbol: '^GDAXI', label: 'DAX' },

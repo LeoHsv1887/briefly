@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const RANGE_MAP: Record<string, { range: string; interval: string }> = {
   '1W': { range: '5d', interval: '1d' },

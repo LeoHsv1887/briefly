@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { fetchYahooQuote } from '@/lib/yahoo-finance'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const GERMAN_STOCKS = new Set([
   'SAP', 'VOW3', 'BMW', 'MBG', 'SIE', 'ALV', 'MUV2', 'DBK', 'DTE', 'BAS',

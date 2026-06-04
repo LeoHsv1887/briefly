@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
 export const maxDuration = 90
 
 function splitTextForTTS(text: string): string[] {
@@ -36,7 +37,7 @@ export async function GET() {
     let topArticles: any[] = []
     let tickers: any[] = []
     try {
-      const feedRes = await fetch(`${baseUrl}/api/feeds`, { cache: 'no-store' })
+      const feedRes = await fetch(`${baseUrl}/api/feeds`, { next: { revalidate: 0 } })
       const feedData = await feedRes.json()
       topArticles = (feedData.articles ?? [])
         .sort((a: any, b: any) => b.score - a.score)
@@ -46,7 +47,7 @@ export async function GET() {
     }
 
     try {
-      const tickerRes = await fetch(`${baseUrl}/api/tickers`, { cache: 'no-store' })
+      const tickerRes = await fetch(`${baseUrl}/api/tickers`, { next: { revalidate: 0 } })
       const tickerData = await tickerRes.json()
       tickers = tickerData.tickers ?? []
     } catch (e) {
@@ -59,7 +60,7 @@ export async function GET() {
     try {
       const weatherRes = await fetch(
         'https://api.open-meteo.com/v1/forecast?latitude=51.9427&longitude=7.9827&current=temperature_2m,weathercode&timezone=Europe/Berlin',
-        { cache: 'no-store' }
+        { next: { revalidate: 0 } }
       )
       const weatherData = await weatherRes.json()
       weatherTemp = Math.round(weatherData.current?.temperature_2m ?? 18).toString()
