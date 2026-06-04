@@ -1,193 +1,153 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { put } from '@vercel/blob';
-import { NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk'
+import { NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 
-export const maxDuration = 60;
-
-function splitIntoChunks(text: string, maxLength: number = 3000): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [text];
-  const chunks: string[] = [];
-  let current = '';
-  for (const sentence of sentences) {
-    if ((current + sentence).length > maxLength) {
-      if (current) chunks.push(current.trim());
-      current = sentence;
-    } else {
-      current += sentence;
-    }
-  }
-  if (current) chunks.push(current.trim());
-  return chunks;
-}
-
-function estimateDuration(script: string): number {
-  return Math.round(script.split(' ').length / 130);
-}
+export const maxDuration = 60
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-
-  // DE local time (UTC+1, ignoring DST – close enough for cron scheduling)
-  const hour = new Date().getUTCHours() + 1;
-  const isMorning = hour < 12;
-  const timeLabel = isMorning ? 'Morgen' : 'Abend';
-  const today = new Date().toLocaleDateString('de-DE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
-  // 1. Top articles
-  let topArticles: Array<{ topic: string; title: string; source: string; score: number }> = [];
   try {
-    const feedRes = await fetch(`${baseUrl}/api/feeds`);
-    const { articles } = await feedRes.json();
-    topArticles = (articles ?? [])
-      .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
-      .slice(0, 12);
-  } catch {}
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-  // 2. Market tickers
-  let tickerLines = '';
-  try {
-    const tickerRes = await fetch(`${baseUrl}/api/tickers`);
-    const { tickers } = await tickerRes.json();
-    tickerLines = (tickers ?? [])
-      .map((t: { label: string; value: string; changePercent: number }) =>
-        `${t.label}: ${t.value} (${t.changePercent >= 0 ? '+' : ''}${t.changePercent}%)`,
-      )
-      .join(', ');
-  } catch {}
+    const hour = new Date().getHours()
+    const isMorning = hour < 12
+    const today = new Date().toLocaleDateString('de-DE', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    })
 
-  // 3. Generate script with Claude
-  const scriptPrompt = `Du bist der Sprecher eines persönlichen News-Podcasts namens "Briefly". Dein Name ist Alex. Du sprichst Deutsch und klingst wie ein kluger, gut informierter Freund – nicht wie ein Nachrichtensprecher. Du erklärst Dinge verständlich, gibst Kontext und Hintergründe, machst natürliche Übergänge zwischen Themen und klingst dabei immer menschlich und lebendig.
+    // 1. Top-Artikel fetchen – mit absolutem URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+    let topArticles: any[] = []
+    let tickers: any[] = []
+
+    try {
+      const feedRes = await fetch(`${baseUrl}/api/feeds`, { next: { revalidate: 0 } })
+      const feedData = await feedRes.json()
+      topArticles = (feedData.articles ?? [])
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, 8)
+    } catch (e) {
+      console.error('[Podcast] Feed fetch failed:', e)
+    }
+
+    try {
+      const tickerRes = await fetch(`${baseUrl}/api/tickers`, { next: { revalidate: 0 } })
+      const tickerData = await tickerRes.json()
+      tickers = tickerData.tickers ?? []
+    } catch (e) {
+      console.error('[Podcast] Ticker fetch failed:', e)
+    }
+
+    // 2. Skript generieren
+    const scriptPrompt = `Du bist der Sprecher eines persönlichen News-Podcasts namens "Briefly". Dein Name ist Alex. Du sprichst Deutsch und klingst wie ein kluger, gut informierter Freund – nicht wie ein Nachrichtensprecher. Erkläre Zusammenhänge verständlich, gib Kontext und klinge dabei immer menschlich und lebendig.
 
 Heute ist ${today}. Es ist ${isMorning ? 'Morgen' : 'Abend'}.
 
-Hier sind die wichtigsten Artikel des Tages (nach Relevanz sortiert):
-${topArticles.map((a, i) => `${i + 1}. [${a.topic}] ${a.title} (Quelle: ${a.source})`).join('\n')}
+Aktuelle Top-Artikel:
+${topArticles.map((a: any, i: number) => `${i + 1}. [${a.topic ?? 'News'}] ${a.title} (${a.source})`).join('\n')}
 
-Aktuelle Marktdaten:
-${tickerLines || '(keine Marktdaten verfügbar)'}
+Marktdaten:
+${tickers.map((t: any) => `${t.label}: ${t.value} (${t.changePercent >= 0 ? '+' : ''}${t.changePercent}%)`).join(', ')}
 
-Schreibe jetzt das vollständige Podcast-Skript für die ${timeLabel}s-Episode.
+Schreibe ein Podcast-Skript für die ${isMorning ? 'Morgen' : 'Abend'}-Episode.
 
-WICHTIGE REGELN:
-- Das Skript soll ca. 400-600 Wörter haben
-- Wähle die 3-4 wichtigsten und interessantesten Themen aus – nicht alle
-- Erkläre WARUM etwas wichtig ist, nicht nur WAS passiert ist
-- Nutze natürliche Übergänge: "Was mich dabei besonders interessiert...", "Das hängt übrigens zusammen mit...", "Und dann war da noch..."
-- Keine Bulletpoints, keine Aufzählungen – nur fließender, gesprochener Text
-- Keine Anweisungen wie [Pause] oder [Musik] – nur reiner Sprechtext
-- Fang direkt mit dem Intro an, kein Vorwort
+REGELN:
+- Genau 500-600 Wörter (für ca. 4-5 Minuten Audio)
+- Wähle die 4-5 wichtigsten Themen aus
+- Erkläre WARUM etwas wichtig ist
+- Natürliche Übergänge, kein steifes Vorlesen
+- Kein JSON, keine Formatierung, nur reiner Sprechtext
+- Beginne direkt mit der Begrüßung
 
-STRUKTUR:
-- Intro (persönliche Begrüßung, Datum, kurzer Ausblick was kommt)
-- Märkte (2-3 Minuten: was ist heute passiert und warum – verknüpfe mit echten Ereignissen)
-- Top-News Block 1: Wirtschaft & Politik (3-4 Minuten: die wichtigsten 2-3 Storys mit Kontext)
-- Top-News Block 2: weitere relevante Themen (2-3 Minuten)
-- Outro (kurz, persönlich, motivierend – nicht generisch)
+STRUKTUR: Intro → Märkte (kurz) → Top-News (2-3 Themen) → Outro`
 
-${
-  isMorning
-    ? 'Morgen-Ton: frisch, energetisch, gibt dem Hörer das Gefühl gut informiert in den Tag zu starten.'
-    : 'Abend-Ton: ruhiger, reflektierend, fasst den Tag zusammen und ordnet ein was wichtig war.'
-}
-
-Schreibe NUR den Sprechtext – kein JSON, keine Formatierung, keine Anmerkungen.`;
-
-  let script = '';
-  try {
-    if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not set');
-    const anthropic = new Anthropic();
     const scriptResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5',
       max_tokens: 1500,
-      messages: [{ role: 'user', content: scriptPrompt }],
-    });
-    script = scriptResponse.content[0].type === 'text' ? scriptResponse.content[0].text : '';
-    console.log(`[Podcast] Script generated: ${script.split(' ').length} words`);
-  } catch (error) {
-    console.error('[Podcast] Script generation error:', error);
-  }
+      messages: [{ role: 'user', content: scriptPrompt }]
+    })
 
-  if (!script) {
-    return NextResponse.json({ success: false, error: 'Script generation failed' }, { status: 500 });
-  }
+    const script = scriptResponse.content[0].type === 'text'
+      ? scriptResponse.content[0].text
+      : 'Fehler beim Generieren des Skripts.'
 
-  // 4. Google Cloud TTS – chunk and synthesize
-  const chunks = splitIntoChunks(script);
-  console.log(`[Podcast] TTS: ${chunks.length} chunk(s)`);
-  const audioBuffers: Buffer[] = [];
+    console.log('[Podcast] Script generated, length:', script.length)
 
-  for (let i = 0; i < chunks.length; i++) {
-    try {
-      const ttsRes = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            input: { text: chunks[i] },
-            voice: {
-              languageCode: 'de-DE',
-              name: 'de-DE-Neural2-B',
-              ssmlGender: 'MALE',
-            },
-            audioConfig: {
-              audioEncoding: 'MP3',
-              speakingRate: 1.0,
-              pitch: 0,
-              volumeGainDb: 0,
-            },
-          }),
-        },
-      );
-      const ttsData = await ttsRes.json();
-      if (ttsData.audioContent) {
-        audioBuffers.push(Buffer.from(ttsData.audioContent, 'base64'));
-        console.log(`[Podcast] TTS chunk ${i + 1}/${chunks.length} OK`);
-      } else {
-        console.error(`[Podcast] TTS chunk ${i + 1} empty response:`, JSON.stringify(ttsData));
+    // 3. Google TTS – nur einen einzigen Request mit max 4500 Zeichen
+    const truncatedScript = script.slice(0, 4500)
+
+    const ttsRes = await fetch(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: { text: truncatedScript },
+          voice: {
+            languageCode: 'de-DE',
+            name: 'de-DE-Neural2-B',
+            ssmlGender: 'MALE'
+          },
+          audioConfig: {
+            audioEncoding: 'MP3',
+            speakingRate: 1.0,
+            pitch: 0
+          }
+        })
       }
-    } catch (error) {
-      console.error(`[Podcast] TTS chunk ${i + 1} error:`, error);
+    )
+
+    const ttsData = await ttsRes.json()
+
+    if (!ttsData.audioContent) {
+      console.error('[Podcast] TTS Error:', JSON.stringify(ttsData))
+      return NextResponse.json({
+        success: false,
+        error: 'TTS failed',
+        details: ttsData
+      }, { status: 500 })
     }
+
+    console.log('[Podcast] Audio generated successfully')
+
+    // 4. In Vercel Blob speichern
+    const audioBuffer = Buffer.from(ttsData.audioContent, 'base64')
+    const filename = `podcast-${isMorning ? 'morning' : 'evening'}.mp3`
+
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN
+    const blob = await put(filename, audioBuffer, {
+      access: 'public',
+      contentType: 'audio/mpeg',
+      addRandomSuffix: false,
+      token: blobToken
+    })
+
+    // 5. Metadaten speichern
+    const metadata = {
+      url: blob.url,
+      title: `${isMorning ? '☀️ Morning Brief' : '🌙 Evening Brief'} · ${today}`,
+      duration: Math.round(script.split(' ').length / 130),
+      generatedAt: new Date().toISOString(),
+      type: isMorning ? 'morning' : 'evening'
+    }
+
+    await put(
+      `podcast-meta-${isMorning ? 'morning' : 'evening'}.json`,
+      JSON.stringify(metadata),
+      {
+        access: 'public',
+        contentType: 'application/json',
+        addRandomSuffix: false,
+        token: blobToken
+      }
+    )
+
+    return NextResponse.json({ success: true, ...metadata })
+
+  } catch (error: any) {
+    console.error('[Podcast] Fatal error:', error)
+    return NextResponse.json({
+      success: false,
+      error: error.message ?? 'Unknown error'
+    }, { status: 500 })
   }
-
-  if (!audioBuffers.length) {
-    return NextResponse.json({ success: false, error: 'TTS failed' }, { status: 500 });
-  }
-
-  // 5. Combine and upload to Vercel Blob
-  const combinedAudio = Buffer.concat(audioBuffers);
-  const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `podcast-${isMorning ? 'morning' : 'evening'}-${dateStr}.mp3`;
-
-  console.log(`[Podcast] Uploading ${Math.round(combinedAudio.length / 1024)} KB to Blob`);
-  const blob = await put(filename, combinedAudio, {
-    access: 'public',
-    contentType: 'audio/mpeg',
-  });
-  console.log(`[Podcast] Upload OK: ${blob.url}`);
-
-  // 6. Save metadata as JSON (overwrite so /latest always finds the newest)
-  const metadata = {
-    url: blob.url,
-    title: `${isMorning ? '☀️ Morning Brief' : '🌙 Evening Brief'} · ${today}`,
-    duration: estimateDuration(script),
-    generatedAt: new Date().toISOString(),
-    type: isMorning ? 'morning' : 'evening',
-    wordCount: script.split(' ').length,
-  };
-
-  const metaFilename = `podcast-meta-${isMorning ? 'morning' : 'evening'}.json`;
-  await put(metaFilename, JSON.stringify(metadata), {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-  });
-
-  return NextResponse.json({ success: true, ...metadata });
 }
