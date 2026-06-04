@@ -1,32 +1,41 @@
 'use client'
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Star, BarChart2, Building, Trophy, Cpu } from 'lucide-react'
 import NewsCard from './NewsCard'
 import type { Article } from '@/lib/types'
 
+const iconMap: Record<string, React.ReactNode> = {
+  star:        <Star size={11} />,
+  'chart-bar': <BarChart2 size={11} />,
+  building:    <Building size={11} />,
+  trophy:      <Trophy size={11} />,
+  cpu:         <Cpu size={11} />,
+}
+
 interface FeedSectionProps {
   title: string
-  icon: React.ReactNode
   iconBg: string
+  iconColor: string
+  iconName: string
   articles: Article[]
   initialCount?: number
 }
 
-export function FeedSection({ title, icon, iconBg, articles, initialCount = 5 }: FeedSectionProps) {
+export function FeedSection({ title, iconBg, iconColor, iconName, articles, initialCount = 5 }: FeedSectionProps) {
   const [expanded, setExpanded] = useState(false)
 
-  const visibleArticles = expanded ? articles : articles.slice(0, initialCount)
-  const hiddenCount = articles.length - initialCount
+  if (!articles || articles.length === 0) return null
 
-  if (articles.length === 0) return null
+  const visible = expanded ? articles : articles.slice(0, initialCount)
+  const hiddenCount = articles.length - initialCount
 
   return (
     <div style={{ background: '#161616', border: '0.5px solid #222', borderRadius: 14, overflow: 'hidden', marginBottom: 8 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 14px 10px', borderBottom: '0.5px solid #1e1e1e' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <div style={{ width: 18, height: 18, borderRadius: 5, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {icon}
+          <div style={{ width: 18, height: 18, borderRadius: 5, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: iconColor }}>
+            {iconMap[iconName]}
           </div>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#d0d0d0' }}>{title}</span>
         </div>
@@ -34,12 +43,13 @@ export function FeedSection({ title, icon, iconBg, articles, initialCount = 5 }:
       </div>
 
       {/* Articles */}
-      {visibleArticles.map((article, index) => (
-        <NewsCard
+      {visible.map((article, index) => (
+        <div
           key={article.id}
-          article={article}
-          isLast={index === visibleArticles.length - 1 && (!expanded || articles.length <= initialCount)}
-        />
+          style={{ borderBottom: index < visible.length - 1 || hiddenCount > 0 ? '0.5px solid #181818' : 'none' }}
+        >
+          <NewsCard article={article} />
+        </div>
       ))}
 
       {/* Load more */}

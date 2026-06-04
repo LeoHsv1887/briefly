@@ -111,7 +111,7 @@ export default function NewsCard({
       rel="noopener noreferrer"
       onClick={() => trackInteraction(article.topic)}
       className="block hover:bg-[#111] transition-colors"
-      style={{ padding: '12px 16px', borderBottom: isLast ? 'none' : '0.5px solid #181818' }}
+      style={{ padding: '12px 16px' }}
     >
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
 

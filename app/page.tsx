@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart2, Bookmark, Building, Cpu, Home, Search, Settings as SettingsIcon, Star, TrendingUp, Trophy } from 'lucide-react';
+import { Bookmark, Home, Search, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
 import { PodcastPlayer } from '@/components/PodcastPlayer';
 import TickerBar from '@/components/TickerBar';
@@ -83,11 +83,11 @@ export default function App() {
     a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.source.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const topArticles      = articles.filter(a => a.score >= 8 && search(a)).slice(0, 7);
+  const topArticles        = articles.filter(a => a.score >= 7 && search(a)).slice(0, 7);
   const wirtschaftArticles = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).slice(0, 7);
-  const politikArticles  = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).slice(0, 7);
-  const sportArticles    = articles.filter(a => a.topic === 'Sport' && search(a)).slice(0, 7);
-  const techArticles     = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).slice(0, 7);
+  const politikArticles    = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).slice(0, 7);
+  const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a)).slice(0, 7);
+  const techArticles       = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).slice(0, 7);
 
   const topStories = [...articles].filter(a => a.score >= 7).sort((a, b) => b.score - a.score).slice(0, 8);
   const dax = tickers.find(t => t.name === 'DAX' || t.label === 'DAX');
@@ -157,34 +157,37 @@ export default function App() {
               <>
                 <FeedSection
                   title="Top Meldungen"
-                  icon={<Star size={11} color="#a89de0" />}
+                  iconName="star"
                   iconBg="#1e1a2e"
+                  iconColor="#a89de0"
                   articles={topArticles}
                 />
                 <FeedSection
                   title="Wirtschaft"
-                  icon={<BarChart2 size={11} color="#22c47a" />}
+                  iconName="chart-bar"
                   iconBg="#1a2a1e"
+                  iconColor="#22c47a"
                   articles={wirtschaftArticles}
                 />
                 <FeedSection
+                  title="Technologie & KI"
+                  iconName="cpu"
+                  iconBg="#1e2530"
+                  iconColor="#5ba8e0"
+                  articles={techArticles}
+                />
+                <FeedSection
                   title="Politik"
-                  icon={<Building size={11} color="#7b7fe0" />}
+                  iconName="building"
                   iconBg="#1e1e2e"
+                  iconColor="#7b7fe0"
                   articles={politikArticles}
                 />
-                {techArticles.length >= 3 && (
-                  <FeedSection
-                    title="Technologie & KI"
-                    icon={<Cpu size={11} color="#5ba8e0" />}
-                    iconBg="#1e2530"
-                    articles={techArticles}
-                  />
-                )}
                 <FeedSection
                   title="Sport"
-                  icon={<Trophy size={11} color="#b87bd4" />}
+                  iconName="trophy"
                   iconBg="#251e2a"
+                  iconColor="#b87bd4"
                   articles={sportArticles}
                 />
               </>
