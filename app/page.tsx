@@ -9,7 +9,8 @@ import TickerBar from '@/components/TickerBar';
 import TopStories from '@/components/TopStories';
 import StocksTab from '@/components/StocksTab';
 import { BookmarksTab } from '@/components/BookmarksTab';
-import { FeedSection } from '@/components/FeedSection';
+import { FeedSection } from '@/components/FeedSection'
+import TopStoriesCarousel from '@/components/TopStoriesCarousel';
 import SettingsPanel from '@/components/Settings';
 import {
   getSettings,
@@ -85,10 +86,10 @@ export default function App() {
     a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.source.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const topArticles        = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 7);
+  const topArticles        = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 8);
   const wirtschaftArticles = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).slice(0, 7);
   const politikArticles    = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).slice(0, 7);
-  const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a)).slice(0, 7);
+  const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 7);
   const techArticles       = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).slice(0, 7);
 
   const topStories = [...articles].filter(a => a.score >= 7).sort((a, b) => b.score - a.score).slice(0, 8);
@@ -160,13 +161,29 @@ export default function App() {
               </div>
             ) : (
               <>
-                <FeedSection
-                  title="Top Meldungen"
-                  iconName="star"
-                  iconBg="#1e1a2e"
-                  iconColor="#a89de0"
-                  articles={topArticles}
-                />
+                {/* Section Header */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  padding: '12px 16px 8px'
+                }}>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: '#3a3a3a'
+                  }}>
+                    Top Meldungen
+                  </span>
+                  <span style={{ fontSize: 11, color: '#2e2e2e' }}>
+                    {topArticles.length} Artikel
+                  </span>
+                </div>
+
+                {/* Karussell */}
+                <TopStoriesCarousel articles={topArticles} />
                 <FeedSection
                   title="Wirtschaft"
                   iconName="chart-bar"
