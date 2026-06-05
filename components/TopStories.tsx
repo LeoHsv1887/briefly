@@ -98,15 +98,40 @@ export default function TopStories({ articles }: TopStoriesProps) {
               </div>
 
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#333', cursor: 'pointer' }}
                 onClick={(e) => { e.stopPropagation(); loadSummary(article.id); }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: '#c48a2a',
+                  background: '#1e1a10',
+                  border: '0.5px solid #c48a2a33',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                  marginTop: 2,
+                }}
               >
-                <Sparkles size={12} strokeWidth={1.5} />
-                {loadingSummaries[article.id] ? 'Lädt...' : summaries[article.id] ? 'Ausblenden' : 'KI-Zusammenfassung'}
+                <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
+                {loadingSummaries[article.id] ? 'Lädt...' : summaries[article.id] ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
               </div>
 
               {summaries[article.id] && (
-                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginTop: 8, padding: '9px 11px', background: '#141414', borderRadius: 8, borderLeft: '2px solid #222' }}>
+                <div style={{
+                  fontSize: 12,
+                  color: '#a0a0a0',
+                  lineHeight: 1.65,
+                  marginTop: 8,
+                  padding: '10px 12px',
+                  background: '#141414',
+                  borderRadius: 8,
+                  borderLeft: '2px solid #c48a2a',
+                  borderTop: '0.5px solid #1e1e1e',
+                  borderRight: '0.5px solid #1e1e1e',
+                  borderBottom: '0.5px solid #1e1e1e',
+                }}>
                   {summaries[article.id]}
                 </div>
               )}

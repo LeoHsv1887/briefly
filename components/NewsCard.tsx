@@ -46,7 +46,6 @@ export default function NewsCard({
 }: NewsCardProps) {
   const [summary, setSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
   // Self-contained bookmark state when parent doesn't manage it
   const [localSaved, setLocalSaved] = useState(() => isBookmarked(article.id));
   const [saveScale, setSaveScale] = useState(false);
@@ -57,7 +56,7 @@ export default function NewsCard({
   const handleSummarize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (summary) { setShowSummary(s => !s); return; }
+    if (summary || loadingSummary) return;
     setLoadingSummary(true);
     try {
       const res = await fetch('/api/summarize', {
@@ -72,10 +71,8 @@ export default function NewsCard({
       });
       const data = await res.json();
       setSummary(data.summary || 'Zusammenfassung nicht verfügbar.');
-      setShowSummary(true);
     } catch {
       setSummary('Zusammenfassung konnte nicht geladen werden.');
-      setShowSummary(true);
     } finally {
       setLoadingSummary(false);
     }
@@ -133,13 +130,26 @@ export default function NewsCard({
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button
+            <div
               onClick={handleSummarize}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#555', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: 11,
+                fontWeight: 500,
+                color: '#c48a2a',
+                background: '#1e1a10',
+                border: '0.5px solid #c48a2a33',
+                borderRadius: 6,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                marginTop: 2,
+              }}
             >
-              <Sparkles size={12} strokeWidth={1.5} />
-              {loadingSummary ? 'Wird geladen…' : showSummary ? 'Ausblenden' : 'KI-Zusammenfassung'}
-            </button>
+              <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
+              {loadingSummary ? 'Lädt...' : summary ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
+            </div>
             <button
               onClick={handleSave}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, transform: saveScale ? 'scale(1.4)' : 'scale(1)', transition: 'transform 0.2s ease' }}
@@ -164,8 +174,20 @@ export default function NewsCard({
       </div>
 
       {/* Summary */}
-      {showSummary && summary && (
-        <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6, marginTop: 8, padding: '9px 11px', background: '#141414', borderRadius: 8, borderLeft: '2px solid #222' }}>
+      {summary && (
+        <div style={{
+          fontSize: 12,
+          color: '#a0a0a0',
+          lineHeight: 1.65,
+          marginTop: 8,
+          padding: '10px 12px',
+          background: '#141414',
+          borderRadius: 8,
+          borderLeft: '2px solid #c48a2a',
+          borderTop: '0.5px solid #1e1e1e',
+          borderRight: '0.5px solid #1e1e1e',
+          borderBottom: '0.5px solid #1e1e1e',
+        }}>
           {summary}
         </div>
       )}

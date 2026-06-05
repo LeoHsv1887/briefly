@@ -82,6 +82,30 @@ export const FEEDS: Array<{ url: string; source: string }> = [
     url: 'https://news.google.com/rss/search?q=Wirtschaft+Finanzen+Deutschland&hl=de&gl=DE&ceid=DE:de',
     source: 'Google News',
   },
+  {
+    url: 'https://news.google.com/rss/search?q=DAX+Aktien+Börse&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=EZB+Fed+Zinsen&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=EU+Europa+Politik&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=Apple+Google+Microsoft+Tech&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=Champions+League+Sport&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=Formel+1+Tennis+NBA&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+  },
 ];
 
 function hashStr(s: string): string {

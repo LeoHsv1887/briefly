@@ -25,10 +25,20 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Erstelle eine präzise Zusammenfassung des folgenden Nachrichtenartikels auf Deutsch in 3–5 Sätzen. Ton: informativ, klar, ohne Füllwörter. Kein "Der Artikel beschreibt" oder ähnliche Meta-Kommentare – direkt zur Sache.
+          content: `Erstelle eine präzise Zusammenfassung dieses Artikels auf Deutsch.
 
 Titel: ${title}
-${content ? `\nInhalt: ${content}` : ''}`,
+${content ? `Inhalt: ${content}` : ''}
+
+ANFORDERUNGEN:
+- 4-6 Sätze
+- Alle wichtigen Kernaussagen und inhaltlichen Schwerpunkte müssen enthalten sein
+- Zahlen, Namen und konkrete Fakten aus dem Artikel übernehmen
+- Erkläre den Kontext und die Bedeutung des Ereignisses
+- Kein "Der Artikel berichtet..." – direkt formulieren
+- Kein Fülltext, jeder Satz muss Information tragen
+
+Schreibe NUR die Zusammenfassung, keine Einleitung oder Erklärung.`,
         },
       ],
     });

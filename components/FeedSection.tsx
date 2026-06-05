@@ -64,7 +64,7 @@ export function FeedSection({ title, iconBg, iconColor, iconName, articles, init
             ))}
           </div>
           <span style={{ fontSize: 11, color: '#333' }}>
-            {expanded ? 'Weniger anzeigen' : `${hiddenCount} weitere Meldungen`}
+            {expanded ? 'Weniger anzeigen' : `${hiddenCount} weitere Meldungen anzeigen`}
           </span>
           <ChevronDown
             size={12}

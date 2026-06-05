@@ -85,13 +85,12 @@ function CardImage({ article }: { article: Article }) {
 function CarouselCard({ article }: { article: Article }) {
   const [summary, setSummary] = useState('');
   const [loadingSummary, setLoadingSummary] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
   const pill = TOPIC_PILL[article.topic] ?? TOPIC_PILL['Allgemein'];
 
   const handleSummarize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (summary) { setShowSummary(s => !s); return; }
+    if (summary || loadingSummary) return;
     setLoadingSummary(true);
     try {
       const res = await fetch('/api/summarize', {
@@ -101,10 +100,8 @@ function CarouselCard({ article }: { article: Article }) {
       });
       const data = await res.json();
       setSummary(data.summary || 'Zusammenfassung nicht verfügbar.');
-      setShowSummary(true);
     } catch {
       setSummary('Zusammenfassung konnte nicht geladen werden.');
-      setShowSummary(true);
     } finally {
       setLoadingSummary(false);
     }
@@ -152,20 +149,44 @@ function CarouselCard({ article }: { article: Article }) {
         </a>
 
         {/* Summary section */}
-        {showSummary && summary && (
-          <p className="text-[12px] text-[#888] leading-relaxed mt-2 border-l-2 border-[#333] pl-2">
+        {summary && (
+          <div style={{
+            fontSize: 12,
+            color: '#a0a0a0',
+            lineHeight: 1.65,
+            marginTop: 8,
+            padding: '10px 12px',
+            background: '#141414',
+            borderRadius: 8,
+            borderLeft: '2px solid #c48a2a',
+            borderTop: '0.5px solid #1e1e1e',
+            borderRight: '0.5px solid #1e1e1e',
+            borderBottom: '0.5px solid #1e1e1e',
+          }}>
             {summary}
-          </p>
+          </div>
         )}
 
-        <button
+        <div
           onClick={handleSummarize}
-          className="flex items-center gap-1.5 mt-2 pt-2 text-[11px] text-[#555] hover:text-[#888] transition-colors"
-          style={{ borderTop: '0.5px solid #1e1e1e' }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 500,
+            color: '#c48a2a',
+            background: '#1e1a10',
+            border: '0.5px solid #c48a2a33',
+            borderRadius: 6,
+            padding: '3px 8px',
+            cursor: 'pointer',
+            marginTop: 8,
+          }}
         >
-          <Sparkles size={11} strokeWidth={1.5} />
-          {loadingSummary ? 'Wird geladen…' : showSummary ? 'Ausblenden' : 'KI-Zusammenfassung'}
-        </button>
+          <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
+          {loadingSummary ? 'Lädt...' : summary ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
+        </div>
       </div>
     </div>
   );
