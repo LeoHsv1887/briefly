@@ -293,6 +293,7 @@ Schreibe NUR den reinen Sprechtext.`
       generatedAt: new Date().toISOString(),
       type: isMorning ? 'morning' : 'evening',
       audioBase64: combinedBase64,
+      script: cleanScript,
     }
 
     try {
