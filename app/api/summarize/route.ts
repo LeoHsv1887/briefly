@@ -25,20 +25,14 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Erstelle eine präzise Zusammenfassung dieses Artikels auf Deutsch.
+          content: `Schreibe eine kurze Zusammenfassung auf Deutsch (3-4 Sätze) für diesen Nachrichtenartikel.
 
 Titel: ${title}
-${content ? `Inhalt: ${content}` : ''}
+${content && content !== title ? `Zusatzinfo: ${content}` : ''}
 
-ANFORDERUNGEN:
-- 4-6 Sätze
-- Alle wichtigen Kernaussagen und inhaltlichen Schwerpunkte müssen enthalten sein
-- Zahlen, Namen und konkrete Fakten aus dem Artikel übernehmen
-- Erkläre den Kontext und die Bedeutung des Ereignisses
-- Kein "Der Artikel berichtet..." – direkt formulieren
-- Kein Fülltext, jeder Satz muss Information tragen
+Schreibe direkt die Zusammenfassung basierend auf dem Titel. Erkläre das Thema, den Kontext und die Bedeutung. Falls nur der Titel bekannt ist, erkläre was hinter diesem Thema steckt und warum es relevant ist.
 
-Schreibe NUR die Zusammenfassung, keine Einleitung oder Erklärung.`,
+Antworte NUR mit der Zusammenfassung, ohne Einleitung.`,
         },
       ],
     });
