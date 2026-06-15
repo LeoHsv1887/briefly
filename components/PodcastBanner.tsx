@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, Mic } from 'lucide-react'
+import { isMorningInGermany } from '@/lib/time'
 
 export function PodcastBanner() {
   const [episode, setEpisode] = useState<any>(null)
@@ -9,8 +10,7 @@ export function PodcastBanner() {
   const [progress, setProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  const hour = new Date().getHours()
-  const isMorning = hour < 12
+  const isMorning = isMorningInGermany()
   const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
   const greeting = isMorning ? 'Dein Morgenbriefing ist verfügbar' : 'Dein Abendbriefing ist verfügbar'
   const generateLabel = isMorning ? 'Morgenbriefing jetzt generieren' : 'Abendbriefing jetzt generieren'

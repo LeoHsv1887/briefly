@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
+import { isMorningInGermany } from '@/lib/time'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 90
@@ -42,10 +43,10 @@ export async function GET() {
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const hour = new Date().getHours()
-    const isMorning = hour < 12
+    const isMorning = isMorningInGermany()
     const today = new Date().toLocaleDateString('de-DE', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      timeZone: 'Europe/Berlin',
     })
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'

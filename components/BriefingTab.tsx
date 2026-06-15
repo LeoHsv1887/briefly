@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { Play, Pause, SkipBack, SkipForward, Mic, FileText, RefreshCw, X } from 'lucide-react'
+import { isMorningInGermany } from '@/lib/time'
 
 interface Episode {
   available: boolean
@@ -46,8 +47,7 @@ export function BriefingTab() {
   const [previewArticles, setPreviewArticles] = useState<any[]>([])
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  const hour = new Date().getHours()
-  const isMorning = hour < 12
+  const isMorning = isMorningInGermany()
   const currentType = isMorning ? 'morning' : 'evening'
   const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
 
