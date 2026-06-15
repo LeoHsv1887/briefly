@@ -12,16 +12,18 @@ export interface Quote {
   high: number
   low: number
   volume: number
+  marketState: string
+  lastUpdated: string // ISO string
 }
 
 export async function fetchYahooQuote(symbol: string, label: string): Promise<Quote | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d`
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       },
-      next: { revalidate: 300 }
+      next: { revalidate: 60 },
     })
 
     if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status}`)
@@ -35,9 +37,11 @@ export async function fetchYahooQuote(symbol: string, label: string): Promise<Qu
     const previousClose = meta.previousClose ?? meta.chartPreviousClose ?? price
     const change = price - previousClose
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
-    const isMarketOpen = meta.marketState === 'REGULAR' ||
-                         meta.marketState === 'PRE' ||
-                         !!(meta.regularMarketPrice && meta.regularMarketPrice !== meta.previousClose)
+    const marketState: string = meta.marketState ?? 'CLOSED'
+    const isMarketOpen = marketState === 'REGULAR' || marketState === 'PRE' || marketState === 'POST'
+    const lastUpdated = meta.regularMarketTime
+      ? new Date(meta.regularMarketTime * 1000).toISOString()
+      : new Date().toISOString()
 
     return {
       symbol,
@@ -53,6 +57,8 @@ export async function fetchYahooQuote(symbol: string, label: string): Promise<Qu
       high: meta.regularMarketDayHigh ?? price,
       low: meta.regularMarketDayLow ?? price,
       volume: meta.regularMarketVolume ?? 0,
+      marketState,
+      lastUpdated,
     }
   } catch (error) {
     console.error(`[Yahoo] Failed to fetch ${symbol}:`, error)

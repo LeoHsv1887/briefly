@@ -374,6 +374,12 @@ function DetailPanel({
                 {fmtPrice(quote.change)} ({isPositive ? '+' : ''}
                 {quote.changePercent.toFixed(2)}%)
               </p>
+              {quote.lastUpdated && (
+                <p className="text-[9px] mt-1" style={{ color: '#333' }}>
+                  Stand: {new Date(quote.lastUpdated).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr
+                  {quote.marketState && quote.marketState !== 'REGULAR' ? ' · Markt geschlossen' : ''}
+                </p>
+              )}
             </div>
           )}
         </div>

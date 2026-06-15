@@ -39,9 +39,11 @@ export default function TickerBar({ tickers }: TickerBarProps) {
               </span>
             </div>
           ) : (
-            <p className="text-[10px] mt-1" style={{ color: '#3a3a3a' }}>
-              Schluss
-            </p>
+            <div className="mt-1">
+              <p className="text-[10px]" style={{ color: '#3a3a3a' }}>
+                Schluss{t.lastUpdated ? ` · ${new Date(t.lastUpdated).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}` : ''}
+              </p>
+            </div>
           )}
         </div>
       ))}

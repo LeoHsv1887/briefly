@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fetchMultipleQuotes, formatPrice } from '@/lib/yahoo-finance'
+import { getGermanHour } from '@/lib/time'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -16,7 +17,7 @@ export async function GET() {
   try {
     const quotes = await fetchMultipleQuotes(TICKER_SYMBOLS)
 
-    const germanHour = new Date().getUTCHours() + 1
+    const germanHour = getGermanHour()
     const isDefinitelyClosed = germanHour >= 20 || germanHour < 8
 
     const tickers = quotes.map(q => ({
@@ -28,7 +29,9 @@ export async function GET() {
       change: q.change,
       changePercent: parseFloat(q.changePercent.toFixed(2)),
       isPositive: q.isPositive,
-      isMarketOpen: !isDefinitelyClosed,
+      isMarketOpen: !isDefinitelyClosed && q.isMarketOpen,
+      marketState: q.marketState,
+      lastUpdated: q.lastUpdated,
     }))
 
     return NextResponse.json({ tickers })

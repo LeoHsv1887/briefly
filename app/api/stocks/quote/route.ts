@@ -46,5 +46,7 @@ export async function GET(request: Request) {
     isPositive: quote.isPositive,
     isMarketOpen: quote.isMarketOpen,
     currency: quote.currency,
+    marketState: quote.marketState,
+    lastUpdated: quote.lastUpdated,
   })
 }

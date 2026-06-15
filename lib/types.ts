@@ -31,6 +31,8 @@ export interface TickerData {
   isPositive: boolean;
   formattedValue: string;
   isMarketOpen: boolean;
+  marketState?: string;
+  lastUpdated?: string;
 }
 
 export interface WeatherData {
@@ -54,6 +56,9 @@ export interface StockQuote {
   volume: number;
   prevClose: number;
   isPositive: boolean;
+  isMarketOpen?: boolean;
+  marketState?: string;
+  lastUpdated?: string;
 }
 
 export interface StockSearchResult {
