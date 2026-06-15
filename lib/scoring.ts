@@ -39,7 +39,12 @@ Themen des Nutzers: Wirtschaft & Finanzen, Politik (DE/EU), Geopolitik, Aktienm�
 Sei SEHR STRENG bei 8+. Maximal 20% der Artikel sollten Score 8+ erhalten.
 Artikel die dasselbe Thema wie ein bereits bewerteter Artikel behandeln: maximal Score 5.
 
-WICHTIG – Sport-Regel: Artikel von Quellen wie Kicker, Sport1 sowie Artikel über Fußball, Bundesliga, Champions League, DFB, Formel 1, Tennis, NBA, Olympia oder andere Sportthemen MÜSSEN topic: "Sport" erhalten und mindestens Score 6 bekommen.
+WICHTIG – topic-Zuweisung nach INHALT, nicht nach Quelle:
+- Weise "Sport" NUR zu wenn der Artikel inhaltlich von einem Sportereignis, Wettkampf, Verein, Athleten, Liga oder sportlicher Leistung handelt (Fußball, Formel 1, Tennis, Olympia, Bundesliga, Champions League, Handball, etc.)
+- Die Quelle (z.B. "Kicker", "Sport1") entscheidet NICHT über das Topic. Entscheide ausschließlich nach dem Titel.
+- Politische, gesellschaftliche oder Klima-Themen aus Sport-Quellen bekommen ihr inhaltlich passendes Topic (z.B. "Politik DE/EU", "Geopolitik"), NICHT "Sport".
+- Beispiel: "Ungarn: Parlament verhindert Wiederwahl von Orbán" → "Geopolitik" (nicht Sport, auch wenn Quelle Kicker ist)
+- Sport-Artikel bekommen mindestens Score 6.
 
 Bewerte folgende Artikel:
 ${JSON.stringify(list)}
@@ -103,8 +108,8 @@ Antworte NUR als JSON-Array:
   }
 }
 
-const SPORT_SOURCES = new Set(['Kicker', 'Sport1', 'ESPN', 'Sky Sport', 'Transfermarkt']);
-const SPORT_KEYWORDS = /bundesliga|champions league|dfb.pokal|formel\s?1|formula\s?1|nba|tennis|olympia|olympic|weltmeister|em 20|wm 20|cl-|ucl|dfl|fußball|fussball|tor|torschütze|tabellenführer|abstiegskampf|aufstieg/i;
+// Only unambiguous sport terms — no source-based override to avoid misclassification
+const SPORT_KEYWORDS = /\b(bundesliga|champions league|dfb-pokal|formel 1|formula 1|\bnba\b|olympia\b|olympische|weltmeister|torschütze|tabellenführer|abstiegskampf|transfermarkt|spieltag|bundesliga-|cl-finale|ucl|dfl)\b/i;
 
 export async function scoreAndAssignTopics(articles: Article[]): Promise<Article[]> {
   if (articles.length === 0) return [];
@@ -121,8 +126,8 @@ export async function scoreAndAssignTopics(articles: Article[]): Promise<Article
   return articles.map((a) => {
     const r = map.get(a.id);
     let scored = r ? { ...a, score: r.score, topic: r.topic } : { ...a, score: 4 };
-    // Force Sport classification for known sport sources and sport keyword titles
-    if (SPORT_SOURCES.has(a.source) || SPORT_KEYWORDS.test(a.title)) {
+    // Only boost clearly sport-specific titles — never override based on source alone
+    if (SPORT_KEYWORDS.test(a.title)) {
       scored = { ...scored, topic: 'Sport', score: Math.max(scored.score, 6) };
     }
     return scored;

@@ -89,7 +89,8 @@ export default function App() {
   const topArticles           = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 8);
   const wirtschaftArticles    = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
   const politikArticles       = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
-  const sportArticles         = articles.filter(a => a.topic === 'Sport' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
+  const NON_SPORT_KEYWORDS = ['Parlament', 'Wiederwahl', 'Klima', 'CO2', 'CO₂', 'Regierung', 'Bundestag', 'Bundesrat', 'Minister', 'Wahl', 'Koalition', 'Gesetz', 'Haushalt', 'Zinsen', 'Inflation', 'EZB', 'Fed'];
+  const sportArticles         = articles.filter(a => a.topic === 'Sport' && search(a) && !NON_SPORT_KEYWORDS.some(kw => a.title.includes(kw))).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
   const techArticles          = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
   const topStoriesTabArticles = [...articles].filter(a => a.score >= 7).sort((a, b) => b.score - a.score).slice(0, 30);
   const dax = tickers.find(t => t.label === 'DAX' || t.symbol === '^GDAXI');
