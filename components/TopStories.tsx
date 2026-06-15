@@ -41,10 +41,15 @@ interface TopStoriesProps {
 
 export default function TopStories({ articles }: TopStoriesProps) {
   const [summaries, setSummaries] = useState<Record<string, string>>({});
+  const [summaryOpen, setSummaryOpen] = useState<Record<string, boolean>>({});
   const [loadingSummaries, setLoadingSummaries] = useState<Record<string, boolean>>({});
 
-  async function loadSummary(id: string) {
-    if (summaries[id] || loadingSummaries[id]) return;
+  async function handleSummaryClick(id: string) {
+    if (summaries[id]) {
+      setSummaryOpen(prev => ({ ...prev, [id]: !prev[id] }));
+      return;
+    }
+    if (loadingSummaries[id]) return;
     const article = articles.find(a => a.id === id);
     if (!article) return;
     setLoadingSummaries(prev => ({ ...prev, [id]: true }));
@@ -56,6 +61,7 @@ export default function TopStories({ articles }: TopStoriesProps) {
       });
       const data = await res.json();
       setSummaries(prev => ({ ...prev, [id]: data.summary }));
+      setSummaryOpen(prev => ({ ...prev, [id]: true }));
     } catch {}
     setLoadingSummaries(prev => ({ ...prev, [id]: false }));
   }
@@ -98,7 +104,7 @@ export default function TopStories({ articles }: TopStoriesProps) {
               </div>
 
               <div
-                onClick={(e) => { e.stopPropagation(); loadSummary(article.id); }}
+                onClick={(e) => { e.stopPropagation(); handleSummaryClick(article.id); }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -115,10 +121,10 @@ export default function TopStories({ articles }: TopStoriesProps) {
                 }}
               >
                 <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
-                {loadingSummaries[article.id] ? 'Lädt...' : summaries[article.id] ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
+                {loadingSummaries[article.id] ? 'Lädt...' : summaryOpen[article.id] ? 'Zusammenfassung ausblenden' : summaries[article.id] ? 'Zusammenfassung anzeigen' : 'KI-Zusammenfassung'}
               </div>
 
-              {summaries[article.id] && (
+              {summaryOpen[article.id] && summaries[article.id] && (
                 <div style={{
                   fontSize: 12,
                   color: '#a0a0a0',

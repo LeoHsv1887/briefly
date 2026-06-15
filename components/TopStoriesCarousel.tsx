@@ -84,13 +84,18 @@ function CardImage({ article }: { article: Article }) {
 
 function CarouselCard({ article }: { article: Article }) {
   const [summary, setSummary] = useState('');
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   const pill = TOPIC_PILL[article.topic] ?? TOPIC_PILL['Allgemein'];
 
   const handleSummarize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (summary || loadingSummary) return;
+    if (summary) {
+      setSummaryOpen(prev => !prev);
+      return;
+    }
+    if (loadingSummary) return;
     setLoadingSummary(true);
     try {
       const res = await fetch('/api/summarize', {
@@ -100,8 +105,10 @@ function CarouselCard({ article }: { article: Article }) {
       });
       const data = await res.json();
       setSummary(data.summary || 'Zusammenfassung nicht verfügbar.');
+      setSummaryOpen(true);
     } catch {
       setSummary('Zusammenfassung konnte nicht geladen werden.');
+      setSummaryOpen(true);
     } finally {
       setLoadingSummary(false);
     }
@@ -112,17 +119,19 @@ function CarouselCard({ article }: { article: Article }) {
       className="flex-shrink-0 flex flex-col overflow-hidden"
       style={{
         width: CARD_W,
+        height: 360,
         borderRadius: 16,
         background: '#161616',
         border: '0.5px solid #222',
         scrollSnapAlign: 'start',
       }}
     >
-      <a href={article.url} target="_blank" rel="noopener noreferrer">
+      <a href={article.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
         <CardImage article={article} />
       </a>
-      <div className="px-3 py-2.5 flex flex-col flex-1">
-        <a href={article.url} target="_blank" rel="noopener noreferrer" className="flex flex-col flex-1">
+      <div className="px-3 py-2.5 flex flex-col flex-1 overflow-hidden">
+        {/* Pill + title + source — fixed area */}
+        <a href={article.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
           <span
             className="inline-block self-start text-[10px] font-medium px-1.5 py-0.5 rounded-full mb-1.5"
             style={{ background: pill.bg, color: pill.color }}
@@ -130,7 +139,7 @@ function CarouselCard({ article }: { article: Article }) {
             {article.topic}
           </span>
           <p
-            className="text-[13px] font-medium leading-snug mb-auto"
+            className="text-[13px] font-medium leading-snug"
             style={{ color: '#d0d0d0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {article.title}
@@ -148,25 +157,26 @@ function CarouselCard({ article }: { article: Article }) {
           </div>
         </a>
 
-        {/* Summary section */}
-        {summary && (
+        {/* Summary — scrollable, takes remaining space */}
+        {summaryOpen && summary && (
           <div style={{
-            fontSize: 12,
+            fontSize: 11,
             color: '#a0a0a0',
-            lineHeight: 1.65,
-            marginTop: 8,
-            padding: '10px 12px',
+            lineHeight: 1.55,
+            marginTop: 6,
+            padding: '8px 10px',
             background: '#141414',
             borderRadius: 8,
             borderLeft: '2px solid #c48a2a',
-            borderTop: '0.5px solid #1e1e1e',
-            borderRight: '0.5px solid #1e1e1e',
-            borderBottom: '0.5px solid #1e1e1e',
+            flex: 1,
+            overflowY: 'auto',
+            minHeight: 0,
           }}>
             {summary}
           </div>
         )}
 
+        {/* Button — always pinned to bottom */}
         <div
           onClick={handleSummarize}
           style={{
@@ -181,11 +191,13 @@ function CarouselCard({ article }: { article: Article }) {
             borderRadius: 6,
             padding: '3px 8px',
             cursor: 'pointer',
-            marginTop: 8,
+            marginTop: 'auto',
+            paddingTop: 6,
+            flexShrink: 0,
           }}
         >
           <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
-          {loadingSummary ? 'Lädt...' : summary ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
+          {loadingSummary ? 'Lädt...' : summaryOpen ? 'Zusammenfassung ausblenden' : summary ? 'Zusammenfassung anzeigen' : 'KI-Zusammenfassung'}
         </div>
       </div>
     </div>

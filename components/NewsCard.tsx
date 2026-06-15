@@ -45,6 +45,7 @@ export default function NewsCard({
   summariesInGerman = true,
 }: NewsCardProps) {
   const [summary, setSummary] = useState('');
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
   // Self-contained bookmark state when parent doesn't manage it
   const [localSaved, setLocalSaved] = useState(() => isBookmarked(article.id));
@@ -56,7 +57,11 @@ export default function NewsCard({
   const handleSummarize = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (summary || loadingSummary) return;
+    if (summary) {
+      setSummaryOpen(prev => !prev);
+      return;
+    }
+    if (loadingSummary) return;
     setLoadingSummary(true);
     try {
       const res = await fetch('/api/summarize', {
@@ -71,8 +76,10 @@ export default function NewsCard({
       });
       const data = await res.json();
       setSummary(data.summary || 'Zusammenfassung nicht verfügbar.');
+      setSummaryOpen(true);
     } catch {
       setSummary('Zusammenfassung konnte nicht geladen werden.');
+      setSummaryOpen(true);
     } finally {
       setLoadingSummary(false);
     }
@@ -148,7 +155,7 @@ export default function NewsCard({
               }}
             >
               <Sparkles size={11} color="#c48a2a" strokeWidth={1.5} />
-              {loadingSummary ? 'Lädt...' : summary ? 'Zusammenfassung' : 'KI-Zusammenfassung'}
+              {loadingSummary ? 'Lädt...' : summaryOpen ? 'Zusammenfassung ausblenden' : summary ? 'Zusammenfassung anzeigen' : 'KI-Zusammenfassung'}
             </div>
             <button
               onClick={handleSave}
@@ -174,7 +181,7 @@ export default function NewsCard({
       </div>
 
       {/* Summary */}
-      {summary && (
+      {summaryOpen && summary && (
         <div style={{
           fontSize: 12,
           color: '#a0a0a0',
