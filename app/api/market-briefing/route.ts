@@ -15,7 +15,8 @@ const BRIEFING_SYMBOLS = [
   { symbol: 'BZ=F', label: 'Öl (Brent)' },
 ]
 
-export async function GET() {
+export async function GET(request: Request) {
+  const baseUrl = new URL(request.url).origin
   const quotes = await fetchMultipleQuotes(BRIEFING_SYMBOLS)
 
   const marketData = quotes.reduce((acc, q) => {
@@ -29,42 +30,50 @@ export async function GET() {
     return acc
   }, {} as Record<string, { label: string; price: string; changePercent: string; isPositive: boolean; isMarketOpen: boolean }>)
 
-  let headlines: string[] = []
+  // Fetch market-relevant articles from the app's own scored+classified feed
+  let marketArticles: Array<{ title: string; source: string; topic: string; score: number }> = []
   try {
-    const newsRes = await fetch(
-      'https://news.google.com/rss/search?q=Aktienmarkt+DAX+Wall+Street+Börse+heute&hl=de&gl=DE&ceid=DE:de',
-      { next: { revalidate: 900 } },
-    )
-    const xml = await newsRes.text()
-    const matches = xml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g) ?? []
-    headlines = matches
-      .map(m => m.replace(/<title><!\[CDATA\[/, '').replace(/\]\]><\/title>/, ''))
-      .filter(t => !t.includes('Google News'))
-      .slice(0, 8)
+    const feedRes = await fetch(`${baseUrl}/api/feeds`, { next: { revalidate: 900 } })
+    const feedData = await feedRes.json()
+    marketArticles = (feedData.articles ?? [])
+      .filter((a: any) =>
+        ['Wirtschaft & Finanzen', 'Aktienmärkte', 'Geopolitik'].includes(a.topic)
+      )
+      .sort((a: any, b: any) => b.score - a.score)
+      .slice(0, 15)
   } catch {}
 
   const today = new Date().toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'Europe/Berlin',
   })
 
   const marketLines = Object.values(marketData)
     .map(d => `- ${d.label}: ${d.price} (${d.isMarketOpen ? d.changePercent + '%' : 'Schluss: ' + d.changePercent + '%'})`)
     .join('\n')
 
-  const headlineLines = headlines.map((h, i) => `${i + 1}. ${h}`).join('\n')
+  const marketContext = marketArticles.length > 0
+    ? marketArticles.map(a => `- ${a.title} (${a.source})`).join('\n')
+    : '(keine Artikel verfügbar)'
 
   const prompt = `Du bist ein erfahrener Finanzjournalist. Heute ist ${today}.
 
-Marktdaten (teilweise Schlusskurse da Märkte aktuell geschlossen):
-${marketLines || '(keine Daten verfügbar)'}
+Aktuelle Marktdaten:
+${marketLines}
 
-Aktuelle Schlagzeilen:
-${headlineLines || '(keine Schlagzeilen verfügbar)'}
+Relevante Wirtschafts- und Finanznachrichten der letzten Stunden:
+${marketContext}
 
-Schreibe ein Markt-Briefing auf Deutsch basierend auf den heutigen Schlusskursen und aktuellen Nachrichten. Erkläre konkret WAS heute passiert ist und WARUM – verknüpfe Kursbewegungen mit echten Ereignissen. Wenn Märkte gerade geschlossen sind, beziehe dich auf den heutigen Handelstag.
+WICHTIGE REGELN für die Markteinschätzung:
+1. Nenne als Grund für eine Kursbewegung NUR Ereignisse die explizit in den bereitgestellten Artikeln erwähnt werden.
+2. Erfinde KEINE Gründe und spekuliere NICHT ("könnte daran liegen", "vermutlich wegen", "angesichts von").
+3. Falls kein klarer Auslöser für eine Kursbewegung erkennbar ist, schreibe es ehrlich: "Ein konkreter Auslöser ist aus den aktuellen Nachrichten nicht eindeutig ersichtlich."
+4. Verknüpfe Kursbewegungen nur wenn ein zeitlicher und thematischer Zusammenhang plausibel ist.
+5. Nenne konkrete Zahlen aus den Artikeln wenn vorhanden (z.B. "Gewinnrückgang von X%" statt "schwache Zahlen").
+6. Wo eine Begründung auf einem Artikel basiert, füge die Quelle in Klammern ein, z.B. "(laut Handelsblatt)" oder "(laut Reuters)".
 
-Antworte NUR als JSON ohne Markdown oder Codeblöcke:
-{"summary":"2-3 Sätze Gesamtüberblick.","dax":"2 Sätze zu DAX und Europa mit konkretem Treiber.","usa":"2 Sätze zu S&P 500 und Nasdaq.","crypto":"2 Sätze zu Bitcoin und Krypto.","commodities":"2 Sätze zu Gold, Öl und Rohstoffen.","sentiment":"bullish"}`
+Schreibe ein präzises Markt-Briefing auf Deutsch. Antworte NUR als JSON ohne Markdown oder Codeblöcke:
+{"summary":"2-3 Sätze faktenbasierter Gesamtüberblick mit Quellenangaben.","dax":"2 Sätze zu DAX und Europa mit konkret belegtem Treiber oder ehrlichem Hinweis falls kein Auslöser bekannt.","usa":"2 Sätze zu S&P 500 und Nasdaq.","crypto":"2 Sätze zu Bitcoin und Krypto.","commodities":"2 Sätze zu Gold, Öl und Rohstoffen.","sentiment":"bullish"}`
 
   let analysis = {
     summary: 'Das Briefing konnte heute nicht geladen werden.',
