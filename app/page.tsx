@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bookmark, Home, Newspaper, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
 import { BriefingTab } from '@/components/BriefingTab';
@@ -30,12 +30,14 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 const BOTTOM_NAV: { Icon: React.ComponentType<{ size: number; strokeWidth: number }>; label: string; tab: Tab }[] = [
-  { Icon: Home,        label: 'Feed',        tab: 'feed'      },
-  { Icon: Newspaper,   label: 'News',        tab: 'news'      },
-  { Icon: TrendingUp,  label: 'Märkte',      tab: 'stocks'    },
-  { Icon: Bookmark,    label: 'Gespeichert', tab: 'bookmarks' },
-  { Icon: SettingsIcon,label: 'Settings',    tab: 'settings'  },
+  { Icon: Home,         label: 'Feed',        tab: 'feed'      },
+  { Icon: Newspaper,    label: 'News',        tab: 'news'      },
+  { Icon: TrendingUp,   label: 'Märkte',      tab: 'stocks'    },
+  { Icon: Bookmark,     label: 'Gespeichert', tab: 'bookmarks' },
+  { Icon: SettingsIcon, label: 'Settings',    tab: 'settings'  },
 ];
+
+const PULL_THRESHOLD = 70;
 
 function SkeletonCard() {
   return (
@@ -53,33 +55,75 @@ function SkeletonCard() {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('feed');
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [tickers, setTickers] = useState<TickerData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [activeTab, setActiveTab]     = useState<Tab>('feed');
+  const [articles, setArticles]       = useState<Article[]>([]);
+  const [tickers, setTickers]         = useState<TickerData[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [settings, setSettings]       = useState<Settings>(DEFAULT_SETTINGS);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
+  const [showSearch, setShowSearch]   = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef<number | null>(null);
+
+  async function fetchFeeds() {
+    try {
+      const [feedRes, tickerRes] = await Promise.allSettled([
+        fetch('/api/feeds', { cache: 'no-store' }).then(r => r.json()),
+        fetch('/api/tickers').then(r => r.json()),
+      ]);
+      if (feedRes.status === 'fulfilled') setArticles(feedRes.value.articles ?? []);
+      if (tickerRes.status === 'fulfilled') setTickers(tickerRes.value.tickers ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     setSettings(getSettings());
-
-    const fetchAll = async () => {
-      try {
-        const [feedRes, tickerRes] = await Promise.allSettled([
-          fetch('/api/feeds').then(r => r.json()),
-          fetch('/api/tickers').then(r => r.json()),
-        ]);
-        if (feedRes.status === 'fulfilled') setArticles(feedRes.value.articles ?? []);
-        if (tickerRes.status === 'fulfilled') setTickers(tickerRes.value.tickers ?? []);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
+    fetchFeeds();
   }, []);
 
   const handleSettingsChange = (s: Settings) => { setSettings(s); saveSettings(s); };
+
+  // ── Pull-to-refresh handlers ──────────────────────────────────────────────
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (activeTab !== 'feed') return;
+    if (window.scrollY === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (activeTab !== 'feed' || touchStartY.current === null || isRefreshing) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0 && window.scrollY === 0) {
+      setPullDistance(Math.min(delta * 0.5, PULL_THRESHOLD + 20));
+    }
+  }
+
+  async function handleTouchEnd() {
+    if (activeTab !== 'feed') return;
+    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(0);
+      touchStartY.current = null;
+      try {
+        await Promise.all([
+          fetchFeeds(),
+          new Promise<void>(r => setTimeout(r, 800)),
+        ]);
+      } finally {
+        setIsRefreshing(false);
+      }
+    } else {
+      setPullDistance(0);
+      touchStartY.current = null;
+    }
+  }
+
+  // ── Derived data ──────────────────────────────────────────────────────────
 
   const search = (a: Article) =>
     !searchQuery ||
@@ -101,8 +145,46 @@ export default function App() {
     setSearchQuery('');
   };
 
+  // ── Pull indicator ────────────────────────────────────────────────────────
+
+  const showPullIndicator = (pullDistance > 0 || isRefreshing) && activeTab === 'feed';
+  const pullIndicator = showPullIndicator ? (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: isRefreshing ? 44 : pullDistance,
+      overflow: 'hidden',
+      transition: isRefreshing ? 'none' : 'height 0.1s',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        opacity: isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1),
+      }}>
+        <div style={{
+          width: 16, height: 16, borderRadius: '50%',
+          border: '1.5px solid #1e1e1e',
+          borderTopColor: isRefreshing ? '#4a4a4a' : '#2a2a2a',
+          animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
+        }} />
+        <span style={{ fontSize: 11, color: '#2a2a2a' }}>
+          {isRefreshing
+            ? 'Wird aktualisiert…'
+            : pullDistance >= PULL_THRESHOLD
+              ? 'Loslassen zum Aktualisieren'
+              : 'Zum Aktualisieren ziehen'}
+        </span>
+      </div>
+    </div>
+  ) : null;
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div
+      style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {activeTab === 'feed' && <Header dax={dax} articleCount={articles.length} settings={settings} />}
 
       {/* Top tab nav */}
@@ -178,6 +260,7 @@ export default function App() {
         ) : (
           /* Feed */
           <div>
+            {pullIndicator}
             {tickers.length > 0 && <TickerBar tickers={tickers} />}
             <PodcastBanner />
 
