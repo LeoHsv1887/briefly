@@ -105,7 +105,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      <Header dax={dax} articleCount={articles.length} settings={settings} />
+      {mainTab === 'feed' && <Header dax={dax} articleCount={articles.length} settings={settings} />}
 
       {/* Tab nav */}
       <nav

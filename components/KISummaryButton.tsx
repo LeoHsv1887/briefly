@@ -1,10 +1,14 @@
 'use client'
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
-import type { Article } from '@/lib/types'
+interface ArticleInput {
+  title: string
+  url: string
+  content?: string
+}
 
 interface KISummaryButtonProps {
-  article: Article
+  article: ArticleInput
   small?: boolean
 }
 
