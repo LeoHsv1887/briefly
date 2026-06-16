@@ -12,8 +12,10 @@ export function PodcastBanner() {
 
   const isMorning = isMorningInGermany()
   const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
-  const greeting = isMorning ? 'Dein Morgenbriefing ist verfügbar' : 'Dein Abendbriefing ist verfügbar'
-  const generateLabel = isMorning ? 'Morgenbriefing jetzt generieren' : 'Abendbriefing jetzt generieren'
+
+  const topics = isMorning
+    ? ['Wirtschaft', 'Politik', 'Technologie']
+    : ['Märkte', 'Nachrichten', 'Ausblick']
 
   useEffect(() => {
     const type = isMorning ? 'morning' : 'evening'
@@ -56,48 +58,94 @@ export function PodcastBanner() {
   }
 
   return (
-    <div style={{
-      background: '#161616',
-      border: '0.5px solid #2a2010',
-      borderRadius: 13,
-      padding: '12px 14px',
-      marginBottom: 8
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 9,
-          background: '#1e1a10', border: '0.5px solid #c48a2a44',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-        }}>
-          <Mic size={18} color="#c48a2a" />
+    <div
+      style={{
+        margin: '20px 18px 0',
+        background: '#0c1624',
+        border: '0.5px solid #142036',
+        borderRadius: 22,
+        padding: '16px 18px',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 12,
+            background: '#0f1e36',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Mic size={18} color="#2a5aaa" />
         </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 500, color: '#c48a2a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <div>
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 500,
+              color: '#3a6aaa',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
             {typeLabel}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#d8d8d8', marginTop: 2 }}>
-            {episode ? greeting : generateLabel}
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 15,
+              fontWeight: 400,
+              color: '#b8ccec',
+              lineHeight: 1.3,
+            }}
+          >
+            {episode ? 'Dein Briefing anhören' : 'Briefing generieren'}
           </div>
-          {episode && (
-            <div style={{ fontSize: 11, color: '#444', marginTop: 1 }}>
-              {episode.duration} Min. · bereit zum Abspielen
-            </div>
-          )}
         </div>
+      </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {topics.map(t => (
+            <span
+              key={t}
+              style={{
+                fontSize: 9,
+                color: '#2a4a6a',
+                background: '#0a1828',
+                border: '0.5px solid #142036',
+                borderRadius: 20,
+                padding: '3px 8px',
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
         {episode ? (
           <button
             onClick={togglePlay}
             style={{
-              width: 32, height: 32, borderRadius: '50%', background: '#c48a2a',
-              border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              background: '#2a5aaa',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             {isPlaying
-              ? <Pause size={14} color="#0f0f0f" />
-              : <Play size={14} color="#0f0f0f" fill="#0f0f0f" />
+              ? <Pause size={14} color="#fff" />
+              : <Play size={14} color="#fff" fill="#fff" />
             }
           </button>
         ) : (
@@ -105,25 +153,56 @@ export function PodcastBanner() {
             onClick={generate}
             disabled={isGenerating}
             style={{
-              padding: '6px 12px', borderRadius: 8,
-              background: isGenerating ? '#1a1a1a' : '#1e1a10',
-              border: '0.5px solid #c48a2a44',
-              color: isGenerating ? '#444' : '#c48a2a',
-              fontSize: 11, fontWeight: 500, cursor: isGenerating ? 'not-allowed' : 'pointer',
-              flexShrink: 0, whiteSpace: 'nowrap'
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              background: isGenerating ? '#0a1828' : '#2a5aaa',
+              border: 'none',
+              cursor: isGenerating ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              opacity: isGenerating ? 0.5 : 1,
             }}
           >
-            {isGenerating ? 'Generiert...' : 'Generieren'}
+            {isGenerating
+              ? <Mic size={14} color="#3a6aaa" />
+              : <Play size={14} color="#fff" fill="#fff" />
+            }
           </button>
         )}
       </div>
 
       {episode && (
         <>
-          <div style={{ height: '2.5px', background: '#1e1e1e', borderRadius: 2, marginTop: 10 }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: '#c48a2a', borderRadius: 2 }} />
+          <div
+            style={{
+              height: '2px',
+              background: '#0f1e36',
+              borderRadius: 2,
+              marginTop: 12,
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${progress}%`,
+                background: '#2a5aaa',
+                borderRadius: 2,
+                transition: 'width 0.5s linear',
+              }}
+            />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#333', marginTop: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 9,
+              color: '#1e3050',
+              marginTop: 4,
+            }}
+          >
             <span>0:00</span>
             <span>{episode.duration} Min.</span>
           </div>

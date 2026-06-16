@@ -9,8 +9,9 @@ import TickerBar from '@/components/TickerBar';
 import TopStories from '@/components/TopStories';
 import StocksTab from '@/components/StocksTab';
 import { BookmarksTab } from '@/components/BookmarksTab';
-import { FeedSection } from '@/components/FeedSection'
+import { FeedSection } from '@/components/FeedSection';
 import TopStoriesCarousel from '@/components/TopStoriesCarousel';
+import { MarketBriefingCard } from '@/components/MarketBriefing';
 import SettingsPanel from '@/components/Settings';
 import {
   getSettings,
@@ -26,14 +27,14 @@ type BottomTab = 'home' | 'stocks' | 'briefing' | 'bookmarks' | 'settings';
 
 function SkeletonCard() {
   return (
-    <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #181818' }}>
-      <div style={{ display: 'flex', gap: 10 }}>
+    <div style={{ padding: '14px 15px', marginBottom: 8 }}>
+      <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ height: 10, background: '#1e1e1e', borderRadius: 4, width: '40%', marginBottom: 8 }} />
-          <div style={{ height: 13, background: '#1e1e1e', borderRadius: 4, width: '100%', marginBottom: 6 }} />
-          <div style={{ height: 13, background: '#1e1e1e', borderRadius: 4, width: '75%' }} />
+          <div style={{ height: 9, background: '#111', borderRadius: 4, width: '40%', marginBottom: 8 }} />
+          <div style={{ height: 13, background: '#111', borderRadius: 4, width: '100%', marginBottom: 6 }} />
+          <div style={{ height: 13, background: '#111', borderRadius: 4, width: '75%' }} />
         </div>
-        <div style={{ width: 72, height: 72, borderRadius: 8, background: '#1a1a1a', flexShrink: 0 }} />
+        <div style={{ width: 72, height: 72, borderRadius: 12, background: '#0e0e0e', flexShrink: 0 }} />
       </div>
     </div>
   );
@@ -86,12 +87,12 @@ export default function App() {
     a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     a.source.toLowerCase().includes(searchQuery.toLowerCase());
 
-  const topArticles           = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 8);
-  const wirtschaftArticles    = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
-  const politikArticles       = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
+  const topArticles        = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 7);
+  const wirtschaftArticles = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
+  const politikArticles    = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
   const NON_SPORT_KEYWORDS = ['Parlament', 'Wiederwahl', 'Klima', 'CO2', 'CO₂', 'Regierung', 'Bundestag', 'Bundesrat', 'Minister', 'Wahl', 'Koalition', 'Gesetz', 'Haushalt', 'Zinsen', 'Inflation', 'EZB', 'Fed'];
-  const sportArticles         = articles.filter(a => a.topic === 'Sport' && search(a) && !NON_SPORT_KEYWORDS.some(kw => a.title.includes(kw))).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
-  const techArticles          = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 20);
+  const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a) && !NON_SPORT_KEYWORDS.some(kw => a.title.includes(kw))).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
+  const techArticles       = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
   const topStoriesTabArticles = [...articles].filter(a => a.score >= 7).sort((a, b) => b.score - a.score).slice(0, 30);
   const dax = tickers.find(t => t.label === 'DAX' || t.symbol === '^GDAXI');
 
@@ -103,42 +104,69 @@ export default function App() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-[#0f0f0f] text-[#e8e8e8]"
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
-    >
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
       <Header dax={dax} articleCount={articles.length} settings={settings} />
 
       {/* Tab nav */}
-      <nav className="flex border-b border-[#1e1e1e] px-4 sticky top-0 bg-[#0f0f0f] z-10 overflow-x-auto no-scrollbar">
+      <nav
+        style={{
+          display: 'flex',
+          padding: '0 22px',
+          borderBottom: '0.5px solid #0e0e0e',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          position: 'sticky',
+          top: 0,
+          background: 'var(--bg-primary)',
+          zIndex: 10,
+        }}
+        className="no-scrollbar"
+      >
         {(Object.keys(TAB_LABELS) as MainTab[]).map(t => (
-          <button
+          <div
             key={t}
             onClick={() => goTo(t, t === 'settings' ? 'settings' : t === 'stocks' ? 'stocks' : t === 'bookmarks' ? 'bookmarks' : t === 'briefing' ? 'briefing' : 'home')}
-            className={`py-3 px-1 mr-5 text-[13px] font-medium transition-colors border-b-2 flex-shrink-0 ${
-              mainTab === t ? 'text-[#e8e8e8] border-white' : 'text-[#555] border-transparent'
-            }`}
+            style={{
+              fontSize: 12,
+              fontWeight: mainTab === t ? 400 : 300,
+              color: mainTab === t ? '#ede9e0' : '#2a2a2a',
+              padding: '14px 0',
+              marginRight: 24,
+              borderBottom: mainTab === t ? '1px solid #ede9e0' : '1px solid transparent',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
           >
             {TAB_LABELS[t]}
-          </button>
+          </div>
         ))}
       </nav>
 
       {/* Search bar */}
       {showSearch && mainTab === 'feed' && (
-        <div className="px-4 py-2 bg-[#0f0f0f] border-b border-[#1e1e1e]">
+        <div style={{ padding: '8px 18px', background: 'var(--bg-primary)', borderBottom: '0.5px solid #111' }}>
           <input
             autoFocus
             type="search"
             placeholder="Artikel durchsuchen…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[14px] text-[#e8e8e8] placeholder:text-[#444] focus:outline-none"
+            style={{
+              width: '100%',
+              background: '#0e0e0e',
+              border: '0.5px solid #1a1a1a',
+              borderRadius: 10,
+              padding: '8px 12px',
+              fontSize: 13,
+              color: 'var(--text-primary)',
+              outline: 'none',
+            }}
           />
         </div>
       )}
 
-      <main className="pb-24">
+      <main style={{ paddingBottom: 80 }}>
         {mainTab === 'settings' ? (
           <SettingsPanel settings={settings} onChange={handleSettingsChange} />
         ) : mainTab === 'bookmarks' ? (
@@ -151,61 +179,33 @@ export default function App() {
           <BriefingTab />
         ) : (
           /* Feed */
-          <div style={{ padding: '8px 12px 0' }}>
+          <div>
             {tickers.length > 0 && <TickerBar tickers={tickers} />}
             <PodcastBanner />
 
             {loading ? (
-              <div style={{ background: '#161616', border: '0.5px solid #222', borderRadius: 14, overflow: 'hidden', marginBottom: 8 }}>
-                {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+              <div style={{ padding: '20px 18px 0' }}>
+                <div style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden' }}>
+                  {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+                </div>
               </div>
             ) : (
               <>
-                {/* Section Header */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  padding: '12px 16px 8px'
-                }}>
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 500,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: '#3a3a3a'
-                  }}>
-                    Top Meldungen
-                  </span>
-                  <span style={{ fontSize: 11, color: '#2e2e2e' }}>
-                    {topArticles.length} Artikel
-                  </span>
-                </div>
-
-                {/* Karussell */}
                 <TopStoriesCarousel articles={topArticles} />
+                <MarketBriefingCard />
                 <FeedSection
                   title="Wirtschaft"
-                  iconName="chart-bar"
-                  iconBg="#1a2a1e"
-                  iconColor="#22c47a"
                   articles={wirtschaftArticles}
                   initialCount={7}
                 />
                 <FeedSection
                   title="Politik"
-                  iconName="building"
-                  iconBg="#1e1e2e"
-                  iconColor="#7b7fe0"
                   articles={politikArticles}
                   initialCount={7}
                 />
                 {techArticles.length > 0 && (
                   <FeedSection
                     title="Technologie & KI"
-                    iconName="cpu"
-                    iconBg="#1e2530"
-                    iconColor="#5ba8e0"
                     articles={techArticles}
                     initialCount={7}
                   />
@@ -213,13 +213,11 @@ export default function App() {
                 {sportArticles.length > 0 && (
                   <FeedSection
                     title="Sport"
-                    iconName="trophy"
-                    iconBg="#251e2a"
-                    iconColor="#b87bd4"
                     articles={sportArticles}
                     initialCount={7}
                   />
                 )}
+                <div style={{ height: 20 }} />
               </>
             )}
           </div>
@@ -227,22 +225,50 @@ export default function App() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-[#1a1a1a] flex justify-around items-center z-20 safe-bottom">
-        <button onClick={() => goTo('feed', 'home')} className={`p-3 transition-opacity ${bottomTab === 'home' ? 'opacity-100' : 'opacity-25'}`} aria-label="Feed">
-          <Home size={22} strokeWidth={1.8} />
-        </button>
-        <button onClick={() => goTo('bookmarks', 'bookmarks')} className={`p-3 transition-opacity ${bottomTab === 'bookmarks' ? 'opacity-100' : 'opacity-25'}`} aria-label="Gespeichert">
-          <Bookmark size={22} strokeWidth={1.8} />
-        </button>
-        <button onClick={() => goTo('briefing', 'briefing')} className={`p-3 transition-opacity ${bottomTab === 'briefing' ? 'opacity-100' : 'opacity-25'}`} aria-label="Briefing">
-          <Mic size={22} strokeWidth={1.8} />
-        </button>
-        <button onClick={() => goTo('stocks', 'stocks')} className={`p-3 transition-opacity ${bottomTab === 'stocks' ? 'opacity-100' : 'opacity-25'}`} aria-label="Aktien">
-          <TrendingUp size={22} strokeWidth={1.8} />
-        </button>
-        <button onClick={() => goTo('settings', 'settings')} className={`p-3 transition-opacity ${bottomTab === 'settings' ? 'opacity-100' : 'opacity-25'}`} aria-label="Einstellungen">
-          <SettingsIcon size={22} strokeWidth={1.8} />
-        </button>
+      <nav
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          justifyContent: 'space-around',
+          padding: '12px 10px calc(6px + env(safe-area-inset-bottom, 0px))',
+          borderTop: '0.5px solid #0e0e0e',
+          background: 'var(--bg-primary)',
+          zIndex: 20,
+        }}
+      >
+        {[
+          { Icon: Home, label: 'Feed', main: 'feed' as MainTab, bottom: 'home' as BottomTab },
+          { Icon: Mic, label: 'Briefing', main: 'briefing' as MainTab, bottom: 'briefing' as BottomTab },
+          { Icon: TrendingUp, label: 'Märkte', main: 'stocks' as MainTab, bottom: 'stocks' as BottomTab },
+          { Icon: Bookmark, label: 'Gespeichert', main: 'bookmarks' as MainTab, bottom: 'bookmarks' as BottomTab },
+          { Icon: SettingsIcon, label: 'Settings', main: 'settings' as MainTab, bottom: 'settings' as BottomTab },
+        ].map(({ Icon, label, main, bottom }) => (
+          <button
+            key={main}
+            onClick={() => goTo(main, bottom)}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 3,
+              color: bottomTab === bottom ? '#ede9e0' : '#1c1c1c',
+              fontSize: 9,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              background: 'none',
+              border: 'none',
+              padding: '4px 8px',
+            }}
+            aria-label={label}
+          >
+            <Icon size={18} strokeWidth={1.6} />
+            <span>{label}</span>
+          </button>
+        ))}
       </nav>
     </div>
   );

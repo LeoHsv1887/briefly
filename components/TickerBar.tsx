@@ -1,6 +1,5 @@
 'use client';
 
-import { TrendingDown, TrendingUp } from 'lucide-react';
 import type { TickerData } from '@/lib/types';
 
 interface TickerBarProps {
@@ -11,38 +10,72 @@ export default function TickerBar({ tickers }: TickerBarProps) {
   if (!tickers.length) return null;
 
   return (
-    <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar border-b border-[#1e1e1e]">
-      {tickers.map((t) => (
+    <div
+      style={{
+        display: 'flex',
+        borderTop: '0.5px solid #111',
+        borderBottom: '0.5px solid #111',
+      }}
+    >
+      {tickers.map((t, i) => (
         <div
           key={t.symbol}
-          className="flex-shrink-0 bg-[#161616] border border-[#222] rounded-xl px-3 py-2 min-w-[105px]"
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            borderRight: i < tickers.length - 1 ? '0.5px solid #111' : 'none',
+            minWidth: 0,
+          }}
         >
-          <p className="text-[10px] text-[#555] font-medium uppercase tracking-wider mb-0.5">
-            {t.symbol}
-          </p>
-          <p className="text-[15px] font-semibold text-[#e8e8e8] tabular-nums leading-none">
+          <div
+            style={{
+              fontSize: 9,
+              color: '#2a2a2a',
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              marginBottom: 3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t.label}
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 400,
+              color: '#d8d4cc',
+              letterSpacing: '-0.01em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {t.formattedValue}
-          </p>
+          </div>
           {t.isMarketOpen ? (
             <div
-              className="flex items-center gap-1 mt-1"
-              style={{ color: t.isPositive ? '#22c47a' : '#e05a4b' }}
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                marginTop: 1,
+                color: t.isPositive ? '#4a9e6a' : '#9e4a4a',
+              }}
             >
-              {t.isPositive ? (
-                <TrendingUp size={11} strokeWidth={2} />
-              ) : (
-                <TrendingDown size={11} strokeWidth={2} />
-              )}
-              <span className="text-[11px] font-medium tabular-nums">
-                {t.isPositive ? '+' : ''}
-                {t.changePercent.toFixed(2)}%
-              </span>
+              {t.isPositive ? '+' : ''}
+              {t.changePercent.toFixed(2)}%
             </div>
           ) : (
-            <div className="mt-1">
-              <p className="text-[10px]" style={{ color: '#3a3a3a' }}>
-                Schluss{t.lastUpdated ? ` · ${new Date(t.lastUpdated).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })}` : ''}
-              </p>
+            <div
+              style={{
+                fontSize: 9,
+                marginTop: 1,
+                color: '#2a2a2a',
+              }}
+            >
+              Schluss
             </div>
           )}
         </div>

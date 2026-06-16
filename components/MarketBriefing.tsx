@@ -1,7 +1,98 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { ChevronRight, RefreshCw, TrendingUp } from 'lucide-react';
+
+// Compact inline card for the feed
+export function MarketBriefingCard() {
+  const [briefing, setBriefing] = useState<BriefingData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/market-briefing')
+      .then(r => r.json())
+      .then(data => setBriefing(data))
+      .catch(() => {});
+  }, []);
+
+  if (!briefing) return null;
+
+  const dax = briefing.marketData['dax'];
+  const daxChange = dax
+    ? `${dax.isPositive ? '+' : ''}${dax.changePercent}%`
+    : null;
+
+  return (
+    <div
+      style={{
+        margin: '18px 18px 0',
+        background: 'var(--bg-card)',
+        border: '0.5px solid #141414',
+        borderRadius: 16,
+        padding: '13px 15px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 9,
+          background: '#0a0a0a',
+          border: '0.5px solid #161616',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <TrendingUp size={15} color="#2a2a2a" />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 9,
+            color: '#2a2a2a',
+            fontWeight: 500,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: 3,
+          }}
+        >
+          Markteinschätzung
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: '#585450',
+            lineHeight: 1.4,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {daxChange && (
+            <>
+              DAX{' '}
+              <span
+                style={{
+                  color: dax?.isPositive ? '#4a9e6a' : '#9e4a4a',
+                  fontWeight: 500,
+                }}
+              >
+                {daxChange}
+              </span>{' '}
+              —{' '}
+            </>
+          )}
+          {briefing.summary}
+        </div>
+      </div>
+      <ChevronRight size={15} color="#1c1c1c" style={{ flexShrink: 0 }} />
+    </div>
+  );
+}
 
 interface MarketEntry {
   label: string;

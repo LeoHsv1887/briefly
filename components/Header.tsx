@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Moon, Sparkles, Sun, Sunrise, Star } from 'lucide-react';
-import type { TickerData } from '@/lib/types';
-import type { Settings } from '@/lib/types';
+import type { TickerData, Settings } from '@/lib/types';
 
 interface HeaderProps {
   dax?: TickerData;
@@ -11,46 +9,14 @@ interface HeaderProps {
   settings: Settings;
 }
 
-function getTimeContext(hour: number) {
-  if (hour >= 5 && hour < 11)
-    return { greeting: 'Guten Morgen', Icon: Sunrise, color: '#c48a2a', period: 'morning' };
-  if (hour >= 11 && hour < 18)
-    return { greeting: 'Guten Tag', Icon: Sun, color: '#c48a2a', period: 'day' };
-  if (hour >= 18 && hour < 23)
-    return { greeting: 'Guten Abend', Icon: Moon, color: '#7b7fe0', period: 'evening' };
-  return { greeting: 'Gute Nacht', Icon: Star, color: '#7b7fe0', period: 'night' };
-}
-
-function getStatusLine(period: string, count: number, dax?: TickerData) {
-  const daxEl = dax && dax.formattedValue !== '—' ? (
-    <span style={{ color: dax.isPositive ? '#22c47a' : '#e05a4b' }}>
-      {' '}· DAX {dax.isPositive ? '+' : ''}{dax.changePercent.toFixed(2)}%
-    </span>
-  ) : null;
-
-  if (period === 'morning')
-    return (
-      <>
-        {count} neue Artikel warten auf dich{daxEl}
-      </>
-    );
-  if (period === 'day')
-    return (
-      <>
-        {count} neue Artikel seit deinem letzten Besuch{daxEl}
-      </>
-    );
-  if (period === 'evening')
-    return (
-      <>
-        Das war der heutige Tag · {count} Top-Storys zur Zusammenfassung
-      </>
-    );
-  return <>Gute Nacht · {count} Artikel warten auf dich</>;
+function getGreeting(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'Guten Morgen';
+  if (hour >= 12 && hour < 18) return 'Guten Tag';
+  if (hour >= 18 && hour < 23) return 'Guten Abend';
+  return 'Gute Nacht';
 }
 
 export default function Header({ dax, articleCount, settings }: HeaderProps) {
-  const [time, setTime] = useState('');
   const [date, setDate] = useState('');
   const [hour, setHour] = useState(new Date().getHours());
 
@@ -58,7 +24,6 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
     const update = () => {
       const now = new Date();
       setHour(now.getHours());
-      setTime(now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
       setDate(
         now.toLocaleDateString('de-DE', {
           weekday: 'long',
@@ -73,28 +38,93 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const { greeting, Icon, color, period } = getTimeContext(hour);
+  const greeting = getGreeting(hour);
+  const firstName = settings.username.split(' ')[0];
+  const daxChange = dax && dax.formattedValue !== '—'
+    ? `${dax.isPositive ? '+' : ''}${dax.changePercent.toFixed(2)}%`
+    : null;
+  const daxPositive = dax?.isPositive ?? true;
 
   return (
-    <header className="px-4 pt-6 pb-4 border-b border-[#1e1e1e]">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#e8e8e8] leading-tight tracking-tight">
-            {greeting},
-            <br />
-            {settings.username}.
-          </h1>
-          <p className="text-[13px] text-[#888] mt-1">{date}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1 pt-1">
-          <span className="text-xl font-semibold text-[#e8e8e8] tabular-nums">{time}</span>
-          <Icon size={18} style={{ color }} strokeWidth={1.8} />
-        </div>
+    <div style={{ padding: '22px 22px 0' }}>
+      <div
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: 12,
+          fontWeight: 400,
+          color: '#2a2a2a',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          marginBottom: 22,
+        }}
+      >
+        Briefly
       </div>
-      <div className="flex items-center gap-1.5 mt-3">
-        <Sparkles size={12} color="#555" strokeWidth={1.5} />
-        <p className="text-[12px] text-[#555]">{getStatusLine(period, articleCount, dax)}</p>
+      <div
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: 28,
+          fontWeight: 400,
+          color: 'var(--text-primary)',
+          lineHeight: 1.15,
+          marginBottom: 5,
+        }}
+      >
+        {greeting},<br />
+        {firstName}.
       </div>
-    </header>
+      <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em' }}>{date}</div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginTop: 14,
+          paddingBottom: 18,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 10,
+            color: '#3a3a3a',
+            background: '#101010',
+            border: '0.5px solid #1c1c1c',
+            borderRadius: 20,
+            padding: '5px 11px',
+          }}
+        >
+          ✦ {articleCount} neue Artikel
+        </div>
+        {daxChange && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 10,
+              color: '#3a3a3a',
+              background: '#101010',
+              border: '0.5px solid #1c1c1c',
+              borderRadius: 20,
+              padding: '5px 11px',
+            }}
+          >
+            DAX{' '}
+            <span
+              style={{
+                color: daxPositive ? '#4a9e6a' : '#9e4a4a',
+                marginLeft: 4,
+                fontWeight: 500,
+              }}
+            >
+              {daxChange}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
