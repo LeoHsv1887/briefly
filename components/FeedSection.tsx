@@ -368,31 +368,16 @@ export function FeedSection({ title, articles, initialCount = 7 }: FeedSectionPr
   const compactItems = visible.slice(3)
 
   return (
-    <div style={{ padding: '20px 18px 0' }} className="feed-section">
-      {/* Section Divider */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 14,
-        }}
-      >
-        <div style={{ flex: 1, height: '0.5px', background: '#111' }} />
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            color: '#282828',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {title}
-        </span>
-        <span style={{ fontSize: 10, color: '#1c1c1c' }}>{articles.length} Artikel</span>
-        <div style={{ flex: 1, height: '0.5px', background: '#111' }} />
+    <div style={{ padding: '0 18px 0' }} className="feed-section">
+      {/* Section Header */}
+      <div style={{ margin: '28px 0 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 400, color: '#e0dcd4', letterSpacing: '-0.01em' }}>
+            {title}
+          </span>
+          <span style={{ fontSize: 10, color: '#1a1a1a' }}>{articles.length} Artikel</span>
+        </div>
+        <div style={{ height: '0.5px', background: '#141414' }} />
       </div>
 
       {/* Big card — first article */}

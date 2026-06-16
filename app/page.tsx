@@ -190,7 +190,7 @@ export default function App() {
             ) : (
               <>
                 <TopStoriesCarousel articles={topArticles} />
-                <MarketBriefingCard />
+                <MarketBriefingCard onPress={() => goTo('stocks')} />
                 <FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} />
                 <FeedSection title="Politik" articles={politikArticles} initialCount={7} />
                 {techArticles.length > 0 && (

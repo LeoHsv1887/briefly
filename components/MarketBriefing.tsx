@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronRight, RefreshCw, TrendingUp } from 'lucide-react';
+import { ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
 
 // Compact inline card for the feed
-export function MarketBriefingCard() {
+export function MarketBriefingCard({ onPress }: { onPress?: () => void }) {
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
 
   useEffect(() => {
@@ -16,80 +16,54 @@ export function MarketBriefingCard() {
 
   if (!briefing) return null;
 
-  const dax = briefing.marketData['dax'];
-  const daxChange = dax
-    ? `${dax.isPositive ? '+' : ''}${dax.changePercent}%`
-    : null;
+  const sentiment = briefing.sentiment ?? 'neutral';
+  const sentimentColor =
+    sentiment === 'bullish' ? '#4a9e6a' :
+    sentiment === 'bearish' ? '#9e4a4a' : '#444';
+  const sentimentBg =
+    sentiment === 'bullish' ? '#0a1a0e' :
+    sentiment === 'bearish' ? '#1a0a0a' : '#111';
+  const sentimentLabel =
+    sentiment === 'bullish' ? 'Bullish' :
+    sentiment === 'bearish' ? 'Bearish' : 'Neutral';
 
   return (
     <div
-      style={{
-        margin: '18px 18px 0',
-        background: 'var(--bg-card)',
-        border: '0.5px solid #141414',
-        borderRadius: 16,
-        padding: '13px 15px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}
+      onClick={onPress}
+      style={{ margin: '16px 18px 0', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden', cursor: onPress ? 'pointer' : 'default' }}
     >
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 9,
-          background: '#0a0a0a',
-          border: '0.5px solid #161616',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <TrendingUp size={15} color="#2a2a2a" />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 9,
-            color: '#2a2a2a',
-            fontWeight: 500,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: 3,
-          }}
-        >
-          Markteinschätzung
+      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+
+        {/* Linker Sentiment-Balken */}
+        <div style={{
+          width: 56, background: sentimentBg,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '16px 0', flexShrink: 0, borderRight: '0.5px solid #111',
+        }}>
+          {sentiment === 'bearish'
+            ? <TrendingDown size={18} color={sentimentColor} style={{ marginBottom: 6 }} />
+            : <TrendingUp   size={18} color={sentimentColor} style={{ marginBottom: 6 }} />
+          }
+          <span style={{ fontSize: 8, fontWeight: 500, color: sentimentColor, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {sentimentLabel}
+          </span>
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: '#585450',
-            lineHeight: 1.4,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {daxChange && (
-            <>
-              DAX{' '}
-              <span
-                style={{
-                  color: dax?.isPositive ? '#4a9e6a' : '#9e4a4a',
-                  fontWeight: 500,
-                }}
-              >
-                {daxChange}
-              </span>{' '}
-              —{' '}
-            </>
-          )}
-          {briefing.summary}
+
+        {/* Rechter Textbereich */}
+        <div style={{ flex: 1, padding: '13px 14px' }}>
+          <div style={{ fontSize: 9, fontWeight: 500, color: '#f2f0ec', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+            Markteinschätzung
+          </div>
+          <div style={{ fontSize: 12, color: '#686460', lineHeight: 1.6, marginBottom: 10 }}>
+            {briefing.summary}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#2a2a2a' }}>
+            <ArrowRight size={11} />
+            Vollständiger Bericht
+          </div>
         </div>
+
       </div>
-      <ChevronRight size={15} color="#1c1c1c" style={{ flexShrink: 0 }} />
     </div>
   );
 }
