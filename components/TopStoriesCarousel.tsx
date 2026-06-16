@@ -99,7 +99,26 @@ interface Props {
 export default function TopStoriesCarousel({ articles }: Props) {
   const [current, setCurrent] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    setTouchStart(e.touches[0].clientX);
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStart === null) return;
+    const diff = touchStart - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      handleInteraction();
+      if (diff > 0) {
+        setCurrent(c => (c + 1) % articles.length);
+      } else {
+        setCurrent(c => (c - 1 + articles.length) % articles.length);
+      }
+    }
+    setTouchStart(null);
+  }
 
   useEffect(() => {
     if (userPaused || articles.length <= 1) return;
@@ -122,8 +141,14 @@ export default function TopStoriesCarousel({ articles }: Props) {
   const article = articles[current];
 
   return (
-    <div style={{ margin: '16px 18px 0' }} className="hero-card">
+    <div
+      style={{ margin: '16px 18px 0' }}
+      className="hero-card"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div
+        key={article.id}
         style={{
           background: 'var(--bg-card)',
           borderRadius: 22,
@@ -135,7 +160,6 @@ export default function TopStoriesCarousel({ articles }: Props) {
           trackInteraction(article.topic);
           window.open(article.url, '_blank');
         }}
-        onTouchStart={handleInteraction}
         onMouseDown={handleInteraction}
       >
         {/* Image area */}
@@ -151,7 +175,7 @@ export default function TopStoriesCarousel({ articles }: Props) {
             background: '#0a0a0a',
           }}
         >
-          <HeroImage article={article} />
+          <HeroImage key={article.id} article={article} />
           {/* Gradient overlay */}
           <div
             style={{
