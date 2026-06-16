@@ -1,18 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Bookmark, Sparkles } from 'lucide-react'
+import { Bookmark } from 'lucide-react'
 import { getBookmarks, removeBookmark } from '@/lib/bookmarks'
 import type { BookmarkedArticle } from '@/lib/bookmarks'
-
-const TOPIC_STYLE: Record<string, { bg: string; color: string }> = {
-  'Wirtschaft & Finanzen': { bg: '#1a2a1e', color: '#22c47a' },
-  'Politik DE/EU':         { bg: '#1e1e2e', color: '#7b7fe0' },
-  'Geopolitik':            { bg: '#2a1e1a', color: '#d4844a' },
-  'Aktienmärkte':          { bg: '#2a2310', color: '#d4a843' },
-  'Technologie & KI':      { bg: '#1e2530', color: '#5ba8e0' },
-  'Sport':                 { bg: '#251e2a', color: '#b87bd4' },
-  'Allgemein':             { bg: '#1e1e1e', color: '#888' },
-}
+import { KISummaryButton } from '@/components/KISummaryButton'
 
 function relTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -25,94 +16,112 @@ function relTime(dateStr: string): string {
   return `vor ${d} Tag${d > 1 ? 'en' : ''}`
 }
 
-function BookmarkCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: () => void }) {
-  const [summary, setSummary] = useState<string | null>(null)
-  const [loadingSummary, setLoadingSummary] = useState(false)
-  const [showSummary, setShowSummary] = useState(false)
-  const style = TOPIC_STYLE[article.topic] ?? TOPIC_STYLE['Allgemein']
-
-  async function loadSummary(e: React.MouseEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (summary) { setShowSummary(s => !s); return }
-    setLoadingSummary(true)
-    try {
-      const res = await fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: article.title, url: article.url, content: article.title, lang: 'de' }),
-      })
-      const data = await res.json()
-      setSummary(data.summary || 'Zusammenfassung nicht verfügbar.')
-      setShowSummary(true)
-    } catch {
-      setSummary('Zusammenfassung konnte nicht geladen werden.')
-      setShowSummary(true)
-    } finally {
-      setLoadingSummary(false)
-    }
-  }
-
+function BigCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: () => void }) {
   return (
-    <div style={{ borderBottom: '0.5px solid #181818' }}>
-      <a
-        href={article.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block px-4 py-4 hover:bg-[#111] transition-colors"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0"
-              style={{ background: style.bg, color: style.color }}
-            >
-              {article.topic}
-            </span>
-            <span className="text-[10px] text-[#484848] uppercase tracking-wider truncate">
+    <a
+      href={article.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ display: 'block', textDecoration: 'none', marginBottom: 8 }}
+    >
+      <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 18, padding: '14px 15px' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {article.source}
+              </span>
+              <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c', flexShrink: 0 }} />
+              <span style={{ fontSize: 9, color: '#1c1c1c' }}>{relTime(article.publishedAt)}</span>
+              <span style={{ fontSize: 9, color: '#363636', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 7px' }}>
+                {article.topic}
+              </span>
+            </div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 400, color: '#d0ccc4', lineHeight: 1.42, marginBottom: 6 }}>
+              {article.title}
+            </div>
+            <div style={{ fontSize: 9, color: '#2a2a2a', marginBottom: 9 }}>
+              Gespeichert {relTime(article.savedAt)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.preventDefault()}>
+              <KISummaryButton article={article} />
+              <button
+                onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+                aria-label="Lesezeichen entfernen"
+              >
+                <Bookmark size={14} color="#2a5aaa" fill="#2a5aaa" strokeWidth={1.8} />
+              </button>
+            </div>
+          </div>
+          {article.imageUrl && (
+            <div style={{ width: 72, height: 72, borderRadius: 12, flexShrink: 0, overflow: 'hidden' }}>
+              <img
+                src={article.imageUrl}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none' }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </a>
+  )
+}
+
+function HalfCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: () => void }) {
+  return (
+    <a
+      href={article.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ display: 'block', textDecoration: 'none', flex: 1, minWidth: 0 }}
+    >
+      <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
+        <div style={{ height: 70, position: 'relative', overflow: 'hidden' }}>
+          {article.imageUrl ? (
+            <img
+              src={article.imageUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+              onError={e => (e.currentTarget.style.display = 'none')}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', background: '#111' }} />
+          )}
+        </div>
+        <div style={{ padding: '10px 11px 11px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               {article.source}
             </span>
+            <span style={{ fontSize: 8, color: '#303030', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 6px' }}>
+              {article.topic}
+            </span>
           </div>
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove() }}
-            className="p-1 flex-shrink-0 hover:opacity-70 transition-opacity"
-            aria-label="Lesezeichen entfernen"
-          >
-            <Bookmark size={15} fill="#c48a2a" color="#c48a2a" strokeWidth={1.8} />
-          </button>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.38, marginBottom: 7 }}>
+            {article.title}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.preventDefault()}>
+            <KISummaryButton article={article} small />
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
+            >
+              <Bookmark size={12} color="#2a5aaa" fill="#2a5aaa" strokeWidth={1.8} />
+            </button>
+          </div>
         </div>
-
-        <p className="text-[14px] text-[#ccc] font-medium leading-snug mb-2">{article.title}</p>
-
-        {showSummary && summary && (
-          <p className="text-[13px] text-[#888] leading-relaxed mb-2 border-l-2 border-[#333] pl-3">
-            {summary}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between mt-1">
-          <button
-            onClick={loadSummary}
-            className="flex items-center gap-1.5 text-[11px] text-[#555] hover:text-[#888] transition-colors"
-          >
-            <Sparkles size={12} strokeWidth={1.5} />
-            {loadingSummary ? 'Wird geladen…' : showSummary ? 'Zusammenfassung ausblenden' : 'KI-Zusammenfassung'}
-          </button>
-          <span className="text-[10px] text-[#333]">
-            Gespeichert {relTime(article.savedAt)}
-          </span>
-        </div>
-      </a>
-    </div>
+      </div>
+    </a>
   )
 }
 
 export function BookmarksTab() {
   const [bookmarks, setBookmarks] = useState<BookmarkedArticle[]>([])
 
-  useEffect(() => {
-    setBookmarks(getBookmarks())
-  }, [])
+  useEffect(() => { setBookmarks(getBookmarks()) }, [])
 
   function handleRemove(id: string) {
     removeBookmark(id)
@@ -121,22 +130,63 @@ export function BookmarksTab() {
 
   if (bookmarks.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', gap: 12 }}>
-        <Bookmark size={32} color="#2a2a2a" />
-        <p style={{ fontSize: 14, color: '#444', textAlign: 'center' }}>Noch keine gespeicherten Artikel.</p>
-        <p style={{ fontSize: 12, color: '#333', textAlign: 'center' }}>Tippe auf das Lesezeichen-Icon um Artikel zu speichern.</p>
+      <div style={{ padding: '22px 22px 0' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+          Briefly
+        </div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 40 }}>
+          Gespeichert
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+          <Bookmark size={32} color="#141414" />
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#2a2a2a', textAlign: 'center' }}>
+            Noch nichts gespeichert.
+          </div>
+          <div style={{ fontSize: 12, color: '#1e1e1e', textAlign: 'center', lineHeight: 1.6 }}>
+            Tippe auf das Lesezeichen-Icon,<br />um Artikel zu speichern.
+          </div>
+        </div>
       </div>
     )
   }
 
+  // Build groups: [BigCard, HalfCard, HalfCard] repeated
+  const groups: { big: BookmarkedArticle; halves: BookmarkedArticle[] }[] = []
+  for (let i = 0; i < bookmarks.length; i += 3) {
+    groups.push({ big: bookmarks[i], halves: bookmarks.slice(i + 1, i + 3) })
+  }
+
   return (
-    <div style={{ padding: '8px 0' }}>
-      <div style={{ padding: '8px 16px 4px', fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#3a3a3a' }}>
-        {bookmarks.length} gespeicherte Artikel
+    <div style={{ paddingBottom: 24 }}>
+
+      {/* ── Header ── */}
+      <div style={{ padding: '22px 22px 0' }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+          Briefly
+        </div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 5 }}>
+          Gespeichert
+        </div>
+        <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em', paddingBottom: 18 }}>
+          {bookmarks.length} {bookmarks.length === 1 ? 'Artikel' : 'Artikel'}
+        </div>
       </div>
-      {bookmarks.map(article => (
-        <BookmarkCard key={article.id} article={article} onRemove={() => handleRemove(article.id)} />
-      ))}
+
+      {/* ── Article groups ── */}
+      <div style={{ padding: '0 18px' }}>
+        {groups.map((group, gi) => (
+          <div key={group.big.id}>
+            <BigCard article={group.big} onRemove={() => handleRemove(group.big.id)} />
+            {group.halves.length > 0 && (
+              <div style={{ display: 'flex', gap: 7, marginBottom: 8 }}>
+                {group.halves.map(article => (
+                  <HalfCard key={article.id} article={article} onRemove={() => handleRemove(article.id)} />
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
