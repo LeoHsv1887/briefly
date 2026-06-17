@@ -65,6 +65,7 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef<number | null>(null);
+  const scrollRef   = useRef<HTMLDivElement>(null);
 
   async function fetchFeeds() {
     try {
@@ -90,7 +91,7 @@ export default function App() {
 
   function handleTouchStart(e: React.TouchEvent) {
     if (activeTab !== 'feed') return;
-    if (window.scrollY === 0) {
+    if ((scrollRef.current?.scrollTop ?? 0) === 0) {
       touchStartY.current = e.touches[0].clientY;
     }
   }
@@ -98,7 +99,7 @@ export default function App() {
   function handleTouchMove(e: React.TouchEvent) {
     if (activeTab !== 'feed' || touchStartY.current === null || isRefreshing) return;
     const delta = e.touches[0].clientY - touchStartY.current;
-    if (delta > 0 && window.scrollY === 0) {
+    if (delta > 0 && (scrollRef.current?.scrollTop ?? 0) === 0) {
       setPullDistance(Math.min(delta * 0.5, PULL_THRESHOLD + 20));
     }
   }
@@ -179,72 +180,76 @@ export default function App() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div
-      style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {activeTab === 'feed' && <Header dax={dax} articleCount={articles.length} settings={settings} />}
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
 
-      {/* Top tab nav */}
-      <nav
-        className="no-scrollbar"
-        style={{
-          display: 'flex',
-          padding: '0 22px',
-          borderBottom: '0.5px solid #0e0e0e',
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          position: 'sticky',
-          top: 0,
-          background: 'var(--bg-primary)',
-          zIndex: 10,
-        }}
+      {/* Scroll container — owns scrollTop, touch handlers, and ref */}
+      <div
+        ref={scrollRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
-        {TOP_TABS.map(t => (
-          <div
-            key={t}
-            onClick={() => goTo(t)}
-            style={{
-              fontSize: 12,
-              fontWeight: activeTab === t ? 400 : 300,
-              color: activeTab === t ? '#ede9e0' : '#2a2a2a',
-              padding: '14px 0',
-              marginRight: 24,
-              borderBottom: activeTab === t ? '1px solid #ede9e0' : '1px solid transparent',
-              whiteSpace: 'nowrap',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            {TAB_LABELS[t]}
-          </div>
-        ))}
-      </nav>
+        {activeTab === 'feed' && <Header dax={dax} articleCount={articles.length} settings={settings} />}
 
-      {/* Search bar (Feed only) */}
-      {showSearch && activeTab === 'feed' && (
-        <div style={{ padding: '8px 18px', background: 'var(--bg-primary)', borderBottom: '0.5px solid #111' }}>
-          <input
-            autoFocus
-            type="search"
-            placeholder="Artikel durchsuchen…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              background: '#0e0e0e',
-              border: '0.5px solid #1a1a1a',
-              borderRadius: 10,
-              padding: '8px 12px',
-              fontSize: 13,
-              color: 'var(--text-primary)',
-              outline: 'none',
-            }}
-          />
-        </div>
-      )}
+        {/* Top tab nav */}
+        <nav
+          className="no-scrollbar"
+          style={{
+            display: 'flex',
+            padding: '0 22px',
+            borderBottom: '0.5px solid #0e0e0e',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            position: 'sticky',
+            top: 0,
+            background: 'var(--bg-primary)',
+            zIndex: 10,
+          }}
+        >
+          {TOP_TABS.map(t => (
+            <div
+              key={t}
+              onClick={() => goTo(t)}
+              style={{
+                fontSize: 12,
+                fontWeight: activeTab === t ? 400 : 300,
+                color: activeTab === t ? '#ede9e0' : '#2a2a2a',
+                padding: '14px 0',
+                marginRight: 24,
+                borderBottom: activeTab === t ? '1px solid #ede9e0' : '1px solid transparent',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              {TAB_LABELS[t]}
+            </div>
+          ))}
+        </nav>
+
+        {/* Search bar (Feed only) */}
+        {showSearch && activeTab === 'feed' && (
+          <div style={{ padding: '8px 18px', background: 'var(--bg-primary)', borderBottom: '0.5px solid #111' }}>
+            <input
+              autoFocus
+              type="search"
+              placeholder="Artikel durchsuchen…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                background: '#0e0e0e',
+                border: '0.5px solid #1a1a1a',
+                borderRadius: 10,
+                padding: '8px 12px',
+                fontSize: 13,
+                color: 'var(--text-primary)',
+                outline: 'none',
+              }}
+            />
+          </div>
+        )}
 
       <main style={{ paddingBottom: 80 }}>
         {activeTab === 'settings' ? (
@@ -288,8 +293,9 @@ export default function App() {
           </div>
         )}
       </main>
+      </div>{/* end scroll container */}
 
-      {/* Bottom nav */}
+      {/* Bottom nav — fixed, lives outside the scroll container */}
       <nav
         style={{
           position: 'fixed',
