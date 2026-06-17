@@ -16,13 +16,11 @@ function relTime(dateStr: string): string {
   return `vor ${d} Tag${d > 1 ? 'en' : ''}`
 }
 
-function BigCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: () => void }) {
+function BigCard({ article, onRemove, onArticleClick }: { article: BookmarkedArticle; onRemove: () => void; onArticleClick: (a: BookmarkedArticle) => void }) {
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ display: 'block', textDecoration: 'none', marginBottom: 8 }}
+    <div
+      onClick={() => onArticleClick(article)}
+      style={{ display: 'block', textDecoration: 'none', marginBottom: 8, cursor: 'pointer' }}
     >
       <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 18, padding: '14px 15px' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -43,10 +41,10 @@ function BigCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: 
             <div style={{ fontSize: 9, color: '#2a2a2a', marginBottom: 9 }}>
               Gespeichert {relTime(article.savedAt)}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.preventDefault()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
               <KISummaryButton article={article} />
               <button
-                onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+                onClick={e => { e.stopPropagation(); onRemove(); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
                 aria-label="Lesezeichen entfernen"
               >
@@ -66,17 +64,15 @@ function BigCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: 
           )}
         </div>
       </div>
-    </a>
+    </div>
   )
 }
 
-function HalfCard({ article, onRemove }: { article: BookmarkedArticle; onRemove: () => void }) {
+function HalfCard({ article, onRemove, onArticleClick }: { article: BookmarkedArticle; onRemove: () => void; onArticleClick: (a: BookmarkedArticle) => void }) {
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ display: 'block', textDecoration: 'none', flex: 1, minWidth: 0 }}
+    <div
+      onClick={() => onArticleClick(article)}
+      style={{ display: 'block', textDecoration: 'none', flex: 1, minWidth: 0, cursor: 'pointer' }}
     >
       <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
         <div style={{ height: 70, position: 'relative', overflow: 'hidden' }}>
@@ -103,10 +99,10 @@ function HalfCard({ article, onRemove }: { article: BookmarkedArticle; onRemove:
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.38, marginBottom: 7 }}>
             {article.title}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.preventDefault()}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} small />
             <button
-              onClick={e => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+              onClick={e => { e.stopPropagation(); onRemove(); }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}
             >
               <Bookmark size={12} color="#2a5aaa" fill="#2a5aaa" strokeWidth={1.8} />
@@ -114,11 +110,15 @@ function HalfCard({ article, onRemove }: { article: BookmarkedArticle; onRemove:
           </div>
         </div>
       </div>
-    </a>
+    </div>
   )
 }
 
-export function BookmarksTab() {
+interface BookmarksTabProps {
+  onArticleClick: (article: BookmarkedArticle) => void
+}
+
+export function BookmarksTab({ onArticleClick }: BookmarksTabProps) {
   const [bookmarks, setBookmarks] = useState<BookmarkedArticle[]>([])
 
   useEffect(() => { setBookmarks(getBookmarks()) }, [])
@@ -176,11 +176,11 @@ export function BookmarksTab() {
       <div style={{ padding: '0 18px' }}>
         {groups.map((group, gi) => (
           <div key={group.big.id}>
-            <BigCard article={group.big} onRemove={() => handleRemove(group.big.id)} />
+            <BigCard article={group.big} onRemove={() => handleRemove(group.big.id)} onArticleClick={onArticleClick} />
             {group.halves.length > 0 && (
               <div style={{ display: 'flex', gap: 7, marginBottom: 8 }}>
                 {group.halves.map(article => (
-                  <HalfCard key={article.id} article={article} onRemove={() => handleRemove(article.id)} />
+                  <HalfCard key={article.id} article={article} onRemove={() => handleRemove(article.id)} onArticleClick={onArticleClick} />
                 ))}
               </div>
             )}

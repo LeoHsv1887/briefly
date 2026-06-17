@@ -94,9 +94,10 @@ function HeroImage({ article }: { article: Article }) {
 
 interface Props {
   articles: Article[];
+  onArticleClick: (article: Article) => void;
 }
 
-export default function TopStoriesCarousel({ articles }: Props) {
+export default function TopStoriesCarousel({ articles, onArticleClick }: Props) {
   const [current, setCurrent] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -158,7 +159,7 @@ export default function TopStoriesCarousel({ articles }: Props) {
         }}
         onClick={() => {
           trackInteraction(article.topic);
-          window.open(article.url, '_blank');
+          onArticleClick(article);
         }}
         onMouseDown={handleInteraction}
       >

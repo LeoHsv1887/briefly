@@ -13,6 +13,7 @@ import { FeedSection } from '@/components/FeedSection';
 import TopStoriesCarousel from '@/components/TopStoriesCarousel';
 import { MarketBriefingCard } from '@/components/MarketBriefing';
 import SettingsPanel from '@/components/Settings';
+import { ArticleReader } from '@/components/ArticleReader';
 import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/profile';
 import type { Article, TickerData, Settings } from '@/lib/types';
 
@@ -64,6 +65,7 @@ export default function App() {
   const [showSearch, setShowSearch]   = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const touchStartY = useRef<number | null>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
 
@@ -255,11 +257,11 @@ export default function App() {
         {activeTab === 'settings' ? (
           <SettingsPanel settings={settings} onChange={handleSettingsChange} />
         ) : activeTab === 'bookmarks' ? (
-          <BookmarksTab />
+          <BookmarksTab onArticleClick={a => setSelectedArticle({ ...a, score: 0 })} />
         ) : activeTab === 'stocks' ? (
           <StocksTab />
         ) : activeTab === 'news' ? (
-          <NewsTab articles={newsArticles} />
+          <NewsTab articles={newsArticles} onArticleClick={setSelectedArticle} />
         ) : activeTab === 'briefing' ? (
           <BriefingTab />
         ) : (
@@ -277,15 +279,15 @@ export default function App() {
               </div>
             ) : (
               <>
-                <TopStoriesCarousel articles={topArticles} />
+                <TopStoriesCarousel articles={topArticles} onArticleClick={setSelectedArticle} />
                 <MarketBriefingCard onPress={() => goTo('stocks')} />
-                <FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} />
-                <FeedSection title="Politik" articles={politikArticles} initialCount={7} />
+                <FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} onArticleClick={setSelectedArticle} />
+                <FeedSection title="Politik" articles={politikArticles} initialCount={7} onArticleClick={setSelectedArticle} />
                 {techArticles.length > 0 && (
-                  <FeedSection title="Technologie & KI" articles={techArticles} initialCount={7} />
+                  <FeedSection title="Technologie & KI" articles={techArticles} initialCount={7} onArticleClick={setSelectedArticle} />
                 )}
                 {sportArticles.length > 0 && (
-                  <FeedSection title="Sport" articles={sportArticles} initialCount={7} />
+                  <FeedSection title="Sport" articles={sportArticles} initialCount={7} onArticleClick={setSelectedArticle} />
                 )}
                 <div style={{ height: 20 }} />
               </>
@@ -294,6 +296,15 @@ export default function App() {
         )}
       </main>
       </div>{/* end scroll container */}
+
+      {/* Article Reader overlay */}
+      {selectedArticle && (
+        <ArticleReader
+          article={selectedArticle}
+          onClose={() => setSelectedArticle(null)}
+          relatedArticles={articles.filter(a => a.topic === selectedArticle.topic && a.id !== selectedArticle.id).slice(0, 3)}
+        />
+      )}
 
       {/* Bottom nav — fixed, lives outside the scroll container */}
       <nav
