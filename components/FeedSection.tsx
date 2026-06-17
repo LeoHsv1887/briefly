@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Bookmark, ChevronDown } from 'lucide-react'
+import { Bookmark, ChevronDown, Sparkles } from 'lucide-react'
 import { KISummaryButton } from '@/components/KISummaryButton'
 import { addBookmark, removeBookmark, isBookmarked } from '@/lib/bookmarks'
 import { trackInteraction } from '@/lib/profile'
@@ -34,12 +34,39 @@ function ArticleBookmark({ article }: { article: Article }) {
 }
 
 function BigCard({ article, onArticleClick }: { article: Article; onArticleClick: (a: Article) => void }) {
+  const [summary, setSummary]         = useState<string | null>(null)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+
+  async function handleSummaryClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (summary) { setSummaryOpen(o => !o); return }
+    if (summaryLoading) return
+    setSummaryLoading(true)
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: article.title, url: article.url, content: article.content ?? article.title, lang: 'de' }),
+      })
+      const data = await res.json()
+      setSummary(data.summary || 'Zusammenfassung nicht verfügbar.')
+      setSummaryOpen(true)
+    } catch {
+      setSummary('Zusammenfassung konnte nicht geladen werden.')
+      setSummaryOpen(true)
+    }
+    setSummaryLoading(false)
+  }
+
   return (
     <div
       onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}
       style={{ cursor: 'pointer', marginBottom: 8 }}
     >
       <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 18, padding: '14px 15px' }}>
+
+        {/* Flex: Text + Thumbnail */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
@@ -52,7 +79,10 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
               {article.title}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
-              <KISummaryButton article={article} />
+              <div onClick={handleSummaryClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#666', background: 'var(--bg-subtle)', border: '0.5px solid #1a1a1a', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', userSelect: 'none' }}>
+                <Sparkles size={10} color="#666" />
+                {summaryLoading ? 'Lädt...' : summaryOpen ? 'Ausblenden' : 'KI-Zusammenfassung'}
+              </div>
               <ArticleBookmark article={article} />
             </div>
           </div>
@@ -62,6 +92,14 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
             </div>
           )}
         </div>
+
+        {/* Zusammenfassung außerhalb des Flex – volle Breite */}
+        {summaryOpen && summary && (
+          <div onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#686460', lineHeight: 1.65, marginTop: 10, padding: '10px 12px', background: '#0a0a0a', borderRadius: 10, borderLeft: '2px solid #1e1e1e' }}>
+            {summary}
+          </div>
+        )}
+
       </div>
     </div>
   )
