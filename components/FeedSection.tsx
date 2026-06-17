@@ -6,6 +6,30 @@ import { addBookmark, removeBookmark, isBookmarked } from '@/lib/bookmarks'
 import { trackInteraction } from '@/lib/profile'
 import type { Article } from '@/lib/types'
 
+// ─── Theme helpers ────────────────────────────────────────────────────────────
+
+function getSectionColors(title: string) {
+  if (title.includes('Wirtschaft') || title.includes('Finanzen') || title.includes('Märkte'))
+    return { bg: 'var(--eco-bg)', color: 'var(--eco-t)', border: 'var(--eco-border)' }
+  if (title.includes('Politik') || title.includes('Geopolitik'))
+    return { bg: 'var(--pol-bg)', color: 'var(--pol-t)', border: 'var(--pol-border)' }
+  if (title.includes('Technologie') || title.includes('Tech') || title.includes('KI'))
+    return { bg: 'var(--tec-bg)', color: 'var(--tec-t)', border: 'var(--tec-border)' }
+  return { bg: 'var(--mkt-bg)', color: 'var(--mkt-t)', border: 'var(--mkt-border)' }
+}
+
+function getTopicColors(topic: string) {
+  if (['Wirtschaft & Finanzen', 'Aktienmärkte & Investing', 'Aktienmärkte'].includes(topic))
+    return { bg: 'var(--eco-bg)', color: 'var(--eco-t)', border: 'var(--eco-border)' }
+  if (['Politik (DE/EU)', 'Politik DE/EU', 'Geopolitik & Welt', 'Geopolitik'].includes(topic))
+    return { bg: 'var(--pol-bg)', color: 'var(--pol-t)', border: 'var(--pol-border)' }
+  if (topic === 'Technologie & KI')
+    return { bg: 'var(--tec-bg)', color: 'var(--tec-t)', border: 'var(--tec-border)' }
+  return { bg: 'var(--mkt-bg)', color: 'var(--mkt-t)', border: 'var(--mkt-border)' }
+}
+
+// ─── Shared sub-components ────────────────────────────────────────────────────
+
 function relTime(dateStr: string): string {
   const min = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60_000)
   if (min < 1) return 'gerade'
@@ -28,15 +52,19 @@ function ArticleBookmark({ article }: { article: Article }) {
 
   return (
     <button onClick={handleClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }} aria-label={saved ? 'Gespeichert' : 'Speichern'}>
-      <Bookmark size={14} color={saved ? '#4a9e6a' : '#1c1c1c'} fill={saved ? '#4a9e6a' : 'none'} strokeWidth={1.8} />
+      <Bookmark size={14} color={saved ? 'var(--up)' : 'var(--t4)'} fill={saved ? 'var(--up)' : 'none'} strokeWidth={1.8} />
     </button>
   )
 }
 
+// ─── Card components ──────────────────────────────────────────────────────────
+
 function BigCard({ article, onArticleClick }: { article: Article; onArticleClick: (a: Article) => void }) {
-  const [summary, setSummary]         = useState<string | null>(null)
-  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [summary, setSummary]               = useState<string | null>(null)
+  const [summaryOpen, setSummaryOpen]       = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
+
+  const tc = getTopicColors(article.topic ?? '')
 
   async function handleSummaryClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -60,42 +88,40 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
   }
 
   return (
-    <div
-      onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}
-      style={{ cursor: 'pointer', marginBottom: 8 }}
-    >
-      <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 18, padding: '14px 15px' }}>
+    <div onClick={() => { trackInteraction(article.topic); onArticleClick(article) }} style={{ cursor: 'pointer', marginBottom: 8 }}>
+      <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, padding: '14px 15px' }}>
 
         {/* Flex: Text + Thumbnail */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
-              <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c', flexShrink: 0 }} />
-              <span style={{ fontSize: 9, color: '#1c1c1c' }}>{relTime(article.publishedAt)}</span>
-              <span style={{ fontSize: 9, color: '#363636', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 7px' }}>{article.topic}</span>
+              <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
+              <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--border2)', flexShrink: 0 }} />
+              <span style={{ fontSize: 8, color: 'var(--t4)' }}>{relTime(article.publishedAt)}</span>
+              <span style={{ fontSize: 8, fontWeight: 600, padding: '2px 6px', borderRadius: 10, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 400, color: '#d0ccc4', lineHeight: 1.42, marginBottom: 9 }}>
+            <div style={{ fontSize: 14, fontWeight: 300, color: 'var(--t2)', lineHeight: 1.42, letterSpacing: '-0.02em', marginBottom: 9 }}>
               {article.title}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
-              <div onClick={handleSummaryClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#666', background: 'var(--bg-subtle)', border: '0.5px solid #1a1a1a', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', userSelect: 'none' }}>
-                <Sparkles size={10} color="#666" />
+              <div onClick={handleSummaryClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--t3)', background: 'var(--bg2)', border: '0.5px solid var(--border2)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', userSelect: 'none' }}>
+                <Sparkles size={10} color="var(--t3)" />
                 {summaryLoading ? 'Lädt...' : summaryOpen ? 'Ausblenden' : 'KI-Zusammenfassung'}
               </div>
               <ArticleBookmark article={article} />
             </div>
           </div>
-          {article.imageUrl && (
-            <div style={{ width: 72, height: 72, borderRadius: 12, flexShrink: 0, overflow: 'hidden' }}>
-              <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none' }} />
-            </div>
-          )}
+          <div style={{ width: 60, height: 60, borderRadius: 10, flexShrink: 0, background: tc.bg, overflow: 'hidden', border: `0.5px solid ${tc.border}` }}>
+            {article.imageUrl
+              ? <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.currentTarget.parentElement as HTMLElement).style.background = tc.bg }} />
+              : null
+            }
+          </div>
         </div>
 
         {/* Zusammenfassung außerhalb des Flex – volle Breite */}
         {summaryOpen && summary && (
-          <div onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#686460', lineHeight: 1.65, marginTop: 10, padding: '10px 12px', background: '#0a0a0a', borderRadius: 10, borderLeft: '2px solid #1e1e1e' }}>
+          <div onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.65, marginTop: 10, padding: '10px 12px', background: 'var(--bg2)', borderRadius: 10, borderLeft: '2px solid var(--border2)' }}>
             {summary}
           </div>
         )}
@@ -106,24 +132,23 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
 }
 
 function HalfCard({ article, onArticleClick }: { article: Article; onArticleClick: (a: Article) => void }) {
+  const tc = getTopicColors(article.topic ?? '')
+
   return (
-    <div
-      onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}
-      style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-    >
-      <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
-        <div style={{ height: 70, position: 'relative', overflow: 'hidden' }}>
+    <div onClick={() => { trackInteraction(article.topic); onArticleClick(article) }} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
+      <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
+        <div style={{ height: 70, position: 'relative', overflow: 'hidden', background: tc.bg }}>
           {article.imageUrl
             ? <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} onError={e => (e.currentTarget.style.display = 'none')} />
-            : <div style={{ width: '100%', height: '100%', background: '#111' }} />
+            : null
           }
         </div>
         <div style={{ padding: '10px 11px 11px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-            <span style={{ fontSize: 8, color: '#303030', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 6px' }}>{article.topic}</span>
+            <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+            <span style={{ fontSize: 8, fontWeight: 600, padding: '2px 5px', borderRadius: 8, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.38, marginBottom: 7 }}>
+          <div style={{ fontSize: 11, fontWeight: 300, color: 'var(--t3)', lineHeight: 1.38, letterSpacing: '-0.01em', marginBottom: 7 }}>
             {article.title}
           </div>
           <div onClick={e => e.stopPropagation()}>
@@ -137,18 +162,15 @@ function HalfCard({ article, onArticleClick }: { article: Article; onArticleClic
 
 function CompactItem({ article, isLast, onArticleClick }: { article: Article; isLast: boolean; onArticleClick: (a: Article) => void }) {
   return (
-    <div
-      onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}
-      style={{ cursor: 'pointer' }}
-    >
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 13px', borderBottom: isLast ? 'none' : '0.5px solid #0c0c0c' }}>
+    <div onClick={() => { trackInteraction(article.topic); onArticleClick(article) }} style={{ cursor: 'pointer' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '11px 13px', borderBottom: isLast ? 'none' : '0.5px solid var(--border)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-            <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-            <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c', flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#181818' }}>{relTime(article.publishedAt)}</span>
+            <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--border2)', flexShrink: 0 }} />
+            <span style={{ fontSize: 8, color: 'var(--t4)' }}>{relTime(article.publishedAt)}</span>
           </div>
-          <div style={{ fontSize: 12, color: '#848484', lineHeight: 1.38, marginBottom: 5 }}>{article.title}</div>
+          <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.38, marginBottom: 5 }}>{article.title}</div>
           <div onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} />
           </div>
@@ -162,6 +184,8 @@ function CompactItem({ article, isLast, onArticleClick }: { article: Article; is
     </div>
   )
 }
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 interface FeedSectionProps {
   title: string
@@ -177,22 +201,27 @@ export function FeedSection({ title, articles, initialCount = 7, onArticleClick 
 
   const visible = expanded ? articles : articles.slice(0, initialCount)
   const hiddenCount = articles.length - initialCount
+  const colors = getSectionColors(title)
 
-  const bigCard = visible[0]
-  const halfCards = visible.slice(1, 3)
+  const bigCard     = visible[0]
+  const halfCards   = visible.slice(1, 3)
   const compactItems = visible.slice(3)
 
   return (
     <div style={{ padding: '0 18px 0' }} className="feed-section">
+
       {/* Section Header */}
-      <div style={{ margin: '28px 0 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 400, color: '#e0dcd4', letterSpacing: '-0.01em' }}>
+      <div style={{ margin: '20px 0 11px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
+          <span style={{ fontSize: 19, fontWeight: 300, color: 'var(--t1)', letterSpacing: '-0.03em' }}>
             {title}
           </span>
-          <span style={{ fontSize: 10, color: '#1a1a1a' }}>{articles.length} Artikel</span>
+          <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 20, background: colors.bg, color: colors.color, border: `0.5px solid ${colors.border}` }}>
+            {title.split(' ')[0]}
+          </span>
+          <span style={{ fontSize: 9, color: 'var(--t4)', marginLeft: 'auto' }}>{articles.length}</span>
         </div>
-        <div style={{ height: '0.5px', background: '#141414' }} />
+        <div style={{ height: '0.5px', background: 'var(--border)' }} />
       </div>
 
       <BigCard article={bigCard} onArticleClick={onArticleClick} />
@@ -206,7 +235,7 @@ export function FeedSection({ title, articles, initialCount = 7, onArticleClick 
       )}
 
       {compactItems.length > 0 && (
-        <div style={{ background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}>
+        <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', marginBottom: 8 }}>
           {compactItems.map((article, i) => (
             <CompactItem key={article.id} article={article} isLast={i === compactItems.length - 1} onArticleClick={onArticleClick} />
           ))}
@@ -214,12 +243,12 @@ export function FeedSection({ title, articles, initialCount = 7, onArticleClick 
       )}
 
       {hiddenCount > 0 && (
-        <div onClick={() => setExpanded(e => !e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 11, color: '#1e1e1e', fontSize: 11, cursor: 'pointer' }}>
+        <div onClick={() => setExpanded(e => !e)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: 11, color: 'var(--t4)', fontSize: 11, cursor: 'pointer' }}>
           <div style={{ display: 'flex', gap: 3 }}>
-            {[0, 1, 2].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: '#1c1c1c' }} />)}
+            {[0, 1, 2].map(i => <div key={i} style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--border2)' }} />)}
           </div>
           <span>{expanded ? 'Weniger anzeigen' : `${hiddenCount} weitere Meldungen`}</span>
-          <ChevronDown size={11} color="#1e1e1e" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          <ChevronDown size={11} color="var(--t4)" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
         </div>
       )}
     </div>

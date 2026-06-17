@@ -192,7 +192,7 @@ export default function App() {
         onTouchEnd={handleTouchEnd}
         style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
-        {activeTab === 'feed' && <Header dax={dax} articleCount={articles.length} settings={settings} />}
+        {activeTab === 'feed' && <div className="anim-1"><Header dax={dax} articleCount={articles.length} settings={settings} /></div>}
 
         {/* Top tab nav */}
         <nav
@@ -268,20 +268,20 @@ export default function App() {
           /* Feed */
           <div>
             {pullIndicator}
-            {tickers.length > 0 && <TickerBar tickers={tickers} />}
-            <PodcastBanner />
+            {tickers.length > 0 && <div className="anim-2"><TickerBar tickers={tickers} /></div>}
+            <div className="anim-3"><PodcastBanner /></div>
 
             {loading ? (
               <div style={{ padding: '20px 18px 0' }}>
-                <div style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
                   {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
               </div>
             ) : (
               <>
-                <TopStoriesCarousel articles={topArticles} onArticleClick={setSelectedArticle} />
-                <MarketBriefingCard onPress={() => goTo('stocks')} />
-                <FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} onArticleClick={setSelectedArticle} />
+                <div className="anim-4"><TopStoriesCarousel articles={topArticles} onArticleClick={setSelectedArticle} /></div>
+                <div className="anim-5"><MarketBriefingCard onPress={() => goTo('stocks')} /></div>
+                <div className="anim-6"><FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} onArticleClick={setSelectedArticle} /></div>
                 <FeedSection title="Politik" articles={politikArticles} initialCount={7} onArticleClick={setSelectedArticle} />
                 {techArticles.length > 0 && (
                   <FeedSection title="Technologie & KI" articles={techArticles} initialCount={7} onArticleClick={setSelectedArticle} />

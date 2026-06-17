@@ -24,7 +24,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#060606',
+  themeColor: '#0f0f0f',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#060606] antialiased overscroll-none">
+      <body className="bg-[#0f0f0f] antialiased overscroll-none">
         {children}
         <SWRegister />
       </body>

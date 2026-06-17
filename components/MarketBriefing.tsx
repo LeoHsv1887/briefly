@@ -30,7 +30,7 @@ export function MarketBriefingCard({ onPress }: { onPress?: () => void }) {
   return (
     <div
       onClick={onPress}
-      style={{ margin: '16px 18px 0', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden', cursor: onPress ? 'pointer' : 'default' }}
+      style={{ margin: '16px 18px 0', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden', cursor: onPress ? 'pointer' : 'default' }}
     >
       <div style={{ display: 'flex', alignItems: 'stretch' }}>
 
@@ -38,26 +38,26 @@ export function MarketBriefingCard({ onPress }: { onPress?: () => void }) {
         <div style={{
           width: 56, background: sentimentBg,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '16px 0', flexShrink: 0, borderRight: '0.5px solid #111',
+          padding: '16px 0', flexShrink: 0, borderRight: '0.5px solid var(--border)',
         }}>
           {sentiment === 'bearish'
             ? <TrendingDown size={18} color={sentimentColor} style={{ marginBottom: 6 }} />
             : <TrendingUp   size={18} color={sentimentColor} style={{ marginBottom: 6 }} />
           }
-          <span style={{ fontSize: 8, fontWeight: 500, color: sentimentColor, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 8, fontWeight: 600, color: sentimentColor, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {sentimentLabel}
           </span>
         </div>
 
         {/* Rechter Textbereich */}
         <div style={{ flex: 1, padding: '13px 14px' }}>
-          <div style={{ fontSize: 9, fontWeight: 500, color: '#f2f0ec', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
             Markteinschätzung
           </div>
-          <div style={{ fontSize: 12, color: '#686460', lineHeight: 1.6, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.6, marginBottom: 10 }}>
             {briefing.summary}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#2a2a2a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--t4)' }}>
             <ArrowRight size={11} />
             Vollständiger Bericht
           </div>
@@ -120,22 +120,22 @@ export function MarketBriefing() {
       <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 18px 8px' }}>
         Indizes
       </div>
-      <div style={{ margin: '0 18px', background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden' }}>
+      <div style={{ margin: '0 18px', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
         {indices.map(({ key, label, region, data }, i) => (
           <div
             key={key}
-            style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: i < indices.length - 1 ? '0.5px solid #0a0a0a' : 'none' }}
+            style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: i < indices.length - 1 ? '0.5px solid var(--border)' : 'none' }}
           >
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: '#0a0a0a', border: '0.5px solid #141414', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
-              <TrendingUp size={13} color="#1e1e1e" />
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg2)', border: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
+              <TrendingUp size={13} color="var(--t4)" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: '#c0c0b8', fontWeight: 400 }}>{label}</div>
-              <div style={{ fontSize: 9, color: '#2a2a2a', marginTop: 1 }}>{region}</div>
+              <div style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 300 }}>{label}</div>
+              <div style={{ fontSize: 9, color: 'var(--t4)', marginTop: 1 }}>{region}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 12, fontWeight: 400, color: '#d8d4cc' }}>{data.price}</div>
-              <div style={{ fontSize: 9, fontWeight: 500, marginTop: 1, color: data.isPositive ? '#4a9e6a' : '#9e4a4a' }}>
+              <div style={{ fontSize: 12, fontWeight: 300, color: 'var(--t1)' }}>{data.price}</div>
+              <div style={{ fontSize: 9, fontWeight: 500, marginTop: 1, color: data.isPositive ? 'var(--up)' : 'var(--dn)' }}>
                 {data.isPositive ? '+' : ''}{data.changePercent}%
               </div>
             </div>
@@ -144,11 +144,11 @@ export function MarketBriefing() {
       </div>
 
       {/* Markteinschätzung */}
-      <div style={{ margin: '10px 18px 0', background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, padding: '12px 13px' }}>
-        <div style={{ fontSize: 8, color: '#222', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>
+      <div style={{ margin: '10px 18px 0', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '12px 13px' }}>
+        <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>
           Markteinschätzung heute
         </div>
-        <div style={{ fontSize: 11, color: '#585450', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.5 }}>
           {briefing.summary}
         </div>
       </div>

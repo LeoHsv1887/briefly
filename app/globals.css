@@ -1,103 +1,108 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #060606;
-  --color-surface: #0e0e0e;
-  --color-edge: #141414;
-  --color-primary: #f2f0ec;
-  --color-secondary: #d0ccc4;
-  --color-muted: #848484;
-  --color-positive: #4a9e6a;
-  --color-negative: #9e4a4a;
+  --color-bg0: #0f0f0f;
+  --color-bg1: #181818;
+  --color-bg2: #212121;
+  --color-bg3: #2a2a2a;
 }
 
+/* ── Design Tokens ────────────────────────────────────────────────────────── */
 :root {
-  --bg-primary: #060606;
-  --bg-card: #0e0e0e;
-  --bg-subtle: #0a0a0a;
-  --border-default: #141414;
-  --border-subtle: #0e0e0e;
-  --border-accent: #1c1c1c;
-  --text-primary: #f2f0ec;
-  --text-secondary: #d0ccc4;
-  --text-muted: #848484;
-  --text-dim: #2a2a2a;
-  --text-dimmer: #1c1c1c;
-  --color-up: #4a9e6a;
-  --color-down: #9e4a4a;
-  --accent-blue: #2a5aaa;
+  /* Backgrounds – dunkelgrau statt schwarz, echte Tiefe */
+  --bg0: #0f0f0f;
+  --bg1: #181818;
+  --bg2: #212121;
+  --bg3: #2a2a2a;
+
+  /* Borders */
+  --border:  #252525;
+  --border2: #2e2e2e;
+
+  /* Text */
+  --t1: #f2ede6;
+  --t2: #a09890;
+  --t3: #585450;
+  --t4: #343230;
+
+  /* Themenfarben */
+  --eco:        #3d6b4a;
+  --eco-bg:     #141e16;
+  --eco-border: #1e2e20;
+  --eco-t:      #6aaa7a;
+
+  --pol:        #3a5a8a;
+  --pol-bg:     #131c2a;
+  --pol-border: #1e2a3e;
+  --pol-t:      #6a9aca;
+
+  --tec:        #5a3a8a;
+  --tec-bg:     #1c1328;
+  --tec-border: #2a1e3e;
+  --tec-t:      #9a7aca;
+
+  --mkt:        #8a5a1a;
+  --mkt-bg:     #281a08;
+  --mkt-border: #3a2410;
+  --mkt-t:      #caaa5a;
+
+  /* Sentiment */
+  --up: #4a9e6a;
+  --dn: #9e4a4a;
+
+  /* Backward-Compat Aliases (für bestehende Komponenten) */
+  --bg-primary:   var(--bg0);
+  --bg-card:      var(--bg1);
+  --bg-subtle:    var(--bg2);
+  --border-default: var(--border);
+  --border-subtle:  var(--border);
+  --border-accent:  var(--border2);
+  --text-primary:   var(--t1);
+  --text-secondary: var(--t2);
+  --text-muted:     var(--t3);
+  --text-dim:       var(--t4);
+  --text-dimmer:    var(--t4);
+  --accent-blue:    #2a5aaa;
   --accent-blue-light: #3a6aaa;
-  --accent-blue-subtle: #0c1624;
+  --accent-blue-subtle: var(--pol-bg);
+  --color-up:  var(--up);
+  --color-down: var(--dn);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg-primary: #fafaf8;
-    --bg-card: #ffffff;
-    --bg-subtle: #f4f4f0;
-    --border-default: #e8e8e0;
-    --border-subtle: #f0f0ec;
-    --text-primary: #1a1a1a;
-    --text-secondary: #4a4a44;
-    --text-muted: #8a8a80;
-    --text-dim: #c0c0b8;
-    --text-dimmer: #d8d8d0;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #060606;
-    --bg-card: #0e0e0e;
-    --bg-subtle: #0a0a0a;
-    --border-default: #141414;
-    --text-primary: #f2f0ec;
-    --text-secondary: #d0ccc4;
-    --text-muted: #848484;
-    --text-dim: #2a2a2a;
-  }
-}
-
+/* ── Global Reset ─────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  scrollbar-width: none;
 }
+*::-webkit-scrollbar { display: none; }
 
 html {
-  background: var(--bg-primary);
+  background: var(--bg0);
   color-scheme: dark;
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--bg0);
+  color: var(--t1);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'Inter', sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 400;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+input[type='range'] { accent-color: var(--t1); }
+
+/* ── Animationen ──────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-input[type='range'] {
-  accent-color: var(--text-primary);
-}
-
-.safe-bottom {
-  padding-top: 0.75rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-}
-
-button {
-  -webkit-user-select: none;
-  user-select: none;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
 }
 
 @keyframes spin {
@@ -105,35 +110,60 @@ button {
   to   { transform: rotate(360deg); }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Staggered Einblendung */
+.anim-1 { animation: fadeInUp 0.35s ease both; }
+.anim-2 { animation: fadeInUp 0.35s 0.06s ease both; }
+.anim-3 { animation: fadeInUp 0.35s 0.12s ease both; }
+.anim-4 { animation: fadeInUp 0.35s 0.18s ease both; }
+.anim-5 { animation: fadeInUp 0.35s 0.24s ease both; }
+.anim-6 { animation: fadeInUp 0.35s 0.30s ease both; }
+
+/* Legacy-Klassen (weiterhin aktiv) */
+.feed-section { animation: fadeInUp 0.3s ease forwards; }
+.hero-card    { animation: fadeInUp 0.4s ease forwards; }
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+
+/* Live-Puls Punkt */
+.live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #e05050;
+  animation: pulse 1.5s ease infinite;
+  display: inline-block;
+  margin-right: 4px;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
-.feed-section {
-  animation: fadeInUp 0.3s ease forwards;
+/* Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  border-top-color: var(--t3);
+  animation: spin 0.7s linear infinite;
 }
 
-.hero-card {
-  animation: fadeInUp 0.4s ease forwards;
+/* Kein Scrollbar */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Safe area */
+.safe-bottom {
+  padding-top: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
 }
 
-* {
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+/* ── Interaktion ──────────────────────────────────────────────────────────── */
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
-
-button,
-[role='button'] {
-  transition: transform 0.1s ease, opacity 0.15s ease;
-}
-
-button:active,
-[role='button']:active {
+button:active, [role="button"]:active {
   transform: scale(0.97);
+  opacity: 0.85;
 }

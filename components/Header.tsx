@@ -24,102 +24,43 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
     const update = () => {
       const now = new Date();
       setHour(now.getHours());
-      setDate(
-        now.toLocaleDateString('de-DE', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        }),
-      );
+      setDate(now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
     };
     update();
     const interval = setInterval(update, 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  const greeting = getGreeting(hour);
-  const firstName = settings.username.split(' ')[0];
-  const daxChange = dax && dax.formattedValue !== '—'
-    ? `${dax.isPositive ? '+' : ''}${dax.changePercent.toFixed(2)}%`
-    : null;
+  const greeting   = getGreeting(hour);
+  const firstName  = settings.username.split(' ')[0];
+  const daxChange  = dax && dax.formattedValue !== '—' ? `${dax.isPositive ? '+' : ''}${dax.changePercent.toFixed(2)}%` : null;
   const daxPositive = dax?.isPositive ?? true;
+
+  const chipStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 5,
+    fontSize: 10, color: 'var(--t3)',
+    background: 'var(--bg1)', border: '0.5px solid var(--border)',
+    borderRadius: 20, padding: '4px 10px',
+  };
 
   return (
     <div style={{ padding: '22px 22px 0' }}>
-      <div
-        style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 12,
-          fontWeight: 400,
-          color: '#2a2a2a',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          marginBottom: 22,
-        }}
-      >
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t4)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 20 }}>
         Briefly
       </div>
-      <div
-        style={{
-          fontFamily: "'Playfair Display', serif",
-          fontSize: 28,
-          fontWeight: 400,
-          color: 'var(--text-primary)',
-          lineHeight: 1.15,
-          marginBottom: 5,
-        }}
-      >
-        {greeting},<br />
-        {firstName}.
+      <div style={{ fontSize: 26, fontWeight: 200, color: 'var(--t1)', lineHeight: 1.2, letterSpacing: '-0.03em', marginBottom: 5 }}>
+        {greeting},<br />{firstName}.
       </div>
-      <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em' }}>{date}</div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginTop: 14,
-          paddingBottom: 18,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            fontSize: 10,
-            color: '#3a3a3a',
-            background: '#101010',
-            border: '0.5px solid #1c1c1c',
-            borderRadius: 20,
-            padding: '5px 11px',
-          }}
-        >
-          ✦ {articleCount} neue Artikel
+      <div style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.01em', marginBottom: 14 }}>{date}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 18 }}>
+        <div style={chipStyle}>
+          <span className="live-dot" />
+          {articleCount} neue Artikel
         </div>
         {daxChange && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              fontSize: 10,
-              color: '#3a3a3a',
-              background: '#101010',
-              border: '0.5px solid #1c1c1c',
-              borderRadius: 20,
-              padding: '5px 11px',
-            }}
-          >
-            DAX{' '}
-            <span
-              style={{
-                color: daxPositive ? '#4a9e6a' : '#9e4a4a',
-                marginLeft: 4,
-                fontWeight: 500,
-              }}
-            >
+          <div style={chipStyle}>
+            DAX
+            <span style={{ color: daxPositive ? 'var(--up)' : 'var(--dn)', fontWeight: 500 }}>
               {daxChange}
             </span>
           </div>
