@@ -89,7 +89,7 @@ function HalfCard({ article, onArticleClick }: { article: Article; onArticleClic
             {article.title}
           </div>
           <div onClick={e => e.stopPropagation()}>
-            <KISummaryButton article={article} small />
+            <KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} />
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ function CompactItem({ article, isLast, onArticleClick }: { article: Article; is
           </div>
           <div style={{ fontSize: 12, color: '#848484', lineHeight: 1.38, marginBottom: 5 }}>{article.title}</div>
           <div onClick={e => e.stopPropagation()}>
-            <KISummaryButton article={article} small />
+            <KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} />
           </div>
         </div>
         {article.imageUrl && (

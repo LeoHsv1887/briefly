@@ -80,7 +80,7 @@ function TrioCards({ articles, onArticleClick }: { articles: Article[]; onArticl
           <div style={{ padding: '9px 10px 10px' }}>
             <div style={{ fontSize: 8, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
-            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small /></div>
+            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
       ))}
@@ -132,7 +132,7 @@ function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArtic
               <span style={{ fontSize: 7, color: '#303030', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
             </div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
-            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small /></div>
+            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
       ))}
@@ -153,7 +153,7 @@ function ListCard({ articles, onArticleClick }: { articles: Article[]; onArticle
               <span style={{ fontSize: 9, color: '#181818' }}>{timeAgo(article.publishedAt)}</span>
             </div>
             <div style={{ fontSize: 11, color: '#848484', lineHeight: 1.35, marginBottom: 4 }}>{article.title}</div>
-            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small /></div>
+            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
           {article.imageUrl && (
             <div style={{ width: 40, height: 40, borderRadius: 8, flexShrink: 0, overflow: 'hidden' }}>
