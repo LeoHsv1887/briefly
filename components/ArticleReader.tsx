@@ -20,13 +20,13 @@ interface Props {
 }
 
 export function ArticleReader({ article, onClose, relatedArticles = [] }: Props) {
-  const [summary, setSummary]             = useState<string | null>(null)
-  const [summaryOpen, setSummaryOpen]     = useState(true)
+  const [summary, setSummary]               = useState<string | null>(null)
+  const [summaryOpen, setSummaryOpen]       = useState(true)
   const [loadingSummary, setLoadingSummary] = useState(false)
-  const [bookmarked, setBookmarked]       = useState(false)
-  const [articleText, setArticleText]     = useState<string | null>(null)
-  const [isPaywall, setIsPaywall]         = useState(false)
-  const [loadingText, setLoadingText]     = useState(false)
+  const [bookmarked, setBookmarked]         = useState(false)
+  const [articleText, setArticleText]       = useState<string | null>(null)
+  const [isPaywall, setIsPaywall]           = useState(false)
+  const [loadingText, setLoadingText]       = useState(false)
 
   useEffect(() => {
     setBookmarked(isBookmarked(article.id))
@@ -103,56 +103,81 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
       overflowY: 'auto', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
     }}>
 
-      {/* Top bar */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '52px 18px 12px',
-        position: 'sticky', top: 0,
-        background: 'linear-gradient(to bottom, #060606 80%, transparent)',
-        zIndex: 10,
-      }}>
-        <div onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '4px 0' }}>
-          <ChevronLeft size={20} color="#444" />
-          <span style={{ fontSize: 11, color: '#2a2a2a' }}>Zurück</span>
-        </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 13, color: '#2a2a2a', letterSpacing: '0.06em' }}>
-          Briefly
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Bookmark size={18} color={bookmarked ? '#2a5aaa' : '#2a2a2a'} fill={bookmarked ? '#2a5aaa' : 'none'} onClick={toggleBookmark} style={{ cursor: 'pointer' }} />
-          <Share2 size={17} color="#2a2a2a" onClick={shareArticle} style={{ cursor: 'pointer' }} />
-        </div>
-      </div>
+      {/* ── Vollbild Hero ── */}
+      <div style={{ height: 320, position: 'relative', overflow: 'hidden' }}>
 
-      {/* Hero image */}
-      <div style={{ height: 220, position: 'relative', overflow: 'hidden', marginTop: -20 }}>
         {article.imageUrl ? (
-          <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }}
-            onError={e => { (e.currentTarget.parentElement as HTMLElement).style.background = 'linear-gradient(135deg,#0a1218,#141e2a)' }} />
+          <img
+            src={article.imageUrl}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => (e.currentTarget.style.display = 'none')}
+          />
         ) : (
-          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,#0a1218,#141e2a)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#1a2a3a,#0a1828,#2a1a2a)' }} />
         )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, #060606 100%)' }} />
+
+        {/* Zurück + Actions – Glasmorphism */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          padding: '50px 18px 0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)',
+        }}>
+          <div onClick={onClose} style={{
+            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+            background: 'rgba(0,0,0,0.3)', borderRadius: 20,
+            padding: '6px 12px 6px 8px', backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
+          }}>
+            <ChevronLeft size={16} color="rgba(255,255,255,0.7)" />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Zurück</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div onClick={toggleBookmark} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}>
+              <Bookmark size={15} color={bookmarked ? '#2a5aaa' : 'rgba(255,255,255,0.6)'} fill={bookmarked ? '#2a5aaa' : 'none'} />
+            </div>
+            <div onClick={shareArticle} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}>
+              <Share2 size={15} color="rgba(255,255,255,0.6)" />
+            </div>
+          </div>
+        </div>
+
+        {/* Meta + Headline auf dem Bild */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 18px 18px',
+          background: 'linear-gradient(to top, rgba(6,6,6,1) 0%, rgba(6,6,6,0.7) 50%, transparent 100%)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+            <span style={{
+              fontSize: 9, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
+              background: 'rgba(255,255,255,0.1)', border: '0.5px solid rgba(255,255,255,0.15)',
+              borderRadius: 20, padding: '3px 9px', letterSpacing: '0.04em',
+              backdropFilter: 'blur(4px)',
+            }}>{article.topic}</span>
+            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
+            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{timeAgo(article.publishedAt)}</span>
+          </div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 400, color: '#f0ece4', lineHeight: 1.3 }}>
+            {article.title}
+          </div>
+        </div>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '0 22px', marginTop: -30, position: 'relative', zIndex: 1 }}>
-
-        {/* Meta */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 9, fontWeight: 500, color: '#444', background: '#0e0e0e', border: '0.5px solid #1a1a1a', borderRadius: 20, padding: '3px 9px', letterSpacing: '0.04em' }}>
-            {article.topic}
-          </span>
-          <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c' }} />
-          <span style={{ fontSize: 9, color: '#2a2a2a', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-          <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c' }} />
-          <span style={{ fontSize: 9, color: '#1e1e1e' }}>{timeAgo(article.publishedAt)}</span>
-        </div>
-
-        {/* Headline */}
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 400, color: '#ebe7df', lineHeight: 1.35, marginBottom: 18 }}>
-          {article.title}
-        </div>
+      {/* ── Content-Bereich ── */}
+      <div style={{ background: '#080808', padding: '18px 22px 0' }}>
 
         {/* KI-Zusammenfassung */}
         <div style={{ background: '#0e0e0e', border: '0.5px solid #1a1a1a', borderRadius: 14, padding: '13px 14px', marginBottom: 22 }}>
@@ -204,7 +229,7 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
           <div style={{ marginBottom: 24 }}>
             {articleText.split('\n\n').map((paragraph, i) =>
               paragraph.trim().length > 0 && (
-                <p key={i} style={{ fontSize: 15, color: '#848484', lineHeight: 1.8, marginBottom: 16, fontWeight: 300 }}>
+                <p key={i} style={{ fontSize: 15, color: '#9a9690', lineHeight: 1.85, marginBottom: 16, fontWeight: 300 }}>
                   {paragraph.trim()}
                 </p>
               )
@@ -239,17 +264,26 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
             <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
               Ähnliche Artikel
             </div>
-            <div style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 14, overflow: 'hidden', marginBottom: 40 }}>
-              {relatedArticles.slice(0, 3).map((related, i) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 40 }}>
+              {relatedArticles.slice(0, 3).map(related => (
                 <div
                   key={related.id}
                   onClick={() => window.open(related.url, '_blank')}
-                  style={{ padding: '12px 13px', borderBottom: i < relatedArticles.length - 1 ? '0.5px solid #0c0c0c' : 'none', cursor: 'pointer' }}
+                  style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 14, padding: '12px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
                 >
-                  <div style={{ fontSize: 9, color: '#2a2a2a', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
-                    {related.source} · {timeAgo(related.publishedAt)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 9, color: '#2a2a2a', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                      {related.source} · {timeAgo(related.publishedAt)}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#848484', lineHeight: 1.4 }}>{related.title}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: '#848484', lineHeight: 1.4 }}>{related.title}</div>
+                  <div style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: '#141414' }}>
+                    {related.imageUrl ? (
+                      <img src={related.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} onError={e => (e.currentTarget.style.display = 'none')} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: '#111' }} />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
