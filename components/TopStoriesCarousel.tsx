@@ -233,10 +233,10 @@ export default function TopStoriesCarousel({ articles, onArticleClick }: Props) 
         <div style={{ padding: '14px 16px 15px' }}>
           <div
             style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif",
               fontSize: 17,
-              fontWeight: 400,
-              color: '#ebe7df',
+              fontWeight: 300,
+              color: '#f2ede8',
               lineHeight: 1.4,
               marginBottom: 12,
             }}

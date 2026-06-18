@@ -481,10 +481,10 @@ export default function StocksTab() {
 
       {/* ── Header ── */}
       <div style={{ padding: '22px 22px 0' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
           Briefly
         </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 5 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 28, fontWeight: 200, color: '#f2ede8', lineHeight: 1.15, marginBottom: 5 }}>
           Märkte
         </div>
         <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em', paddingBottom: 18 }}>

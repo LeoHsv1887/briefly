@@ -35,7 +35,7 @@ function BigCard({ article, onRemove, onArticleClick }: { article: BookmarkedArt
                 {article.topic}
               </span>
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 400, color: '#d0ccc4', lineHeight: 1.42, marginBottom: 6 }}>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, fontWeight: 300, color: '#f0ece6', lineHeight: 1.42, marginBottom: 6 }}>
               {article.title}
             </div>
             <div style={{ fontSize: 9, color: '#2a2a2a', marginBottom: 9 }}>
@@ -96,7 +96,7 @@ function HalfCard({ article, onRemove, onArticleClick }: { article: BookmarkedAr
               {article.topic}
             </span>
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.38, marginBottom: 7 }}>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 300, color: '#c8c4be', lineHeight: 1.38, marginBottom: 7 }}>
             {article.title}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
@@ -131,15 +131,15 @@ export function BookmarksTab({ onArticleClick }: BookmarksTabProps) {
   if (bookmarks.length === 0) {
     return (
       <div style={{ padding: '22px 22px 0' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
           Briefly
         </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 40 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 28, fontWeight: 200, color: '#f2ede8', lineHeight: 1.15, marginBottom: 40 }}>
           Gespeichert
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
           <Bookmark size={32} color="#141414" />
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#2a2a2a', textAlign: 'center' }}>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, color: '#2a2a2a', textAlign: 'center' }}>
             Noch nichts gespeichert.
           </div>
           <div style={{ fontSize: 12, color: '#1e1e1e', textAlign: 'center', lineHeight: 1.6 }}>
@@ -161,10 +161,10 @@ export function BookmarksTab({ onArticleClick }: BookmarksTabProps) {
 
       {/* ── Header ── */}
       <div style={{ padding: '22px 22px 0' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
           Briefly
         </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 5 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 28, fontWeight: 200, color: '#f2ede8', lineHeight: 1.15, marginBottom: 5 }}>
           Gespeichert
         </div>
         <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em', paddingBottom: 18 }}>

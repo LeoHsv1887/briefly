@@ -148,10 +148,10 @@ export function BriefingTab() {
 
       {/* ── Header ── */}
       <div style={{ padding: '22px 22px 0' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
           Briefly
         </div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 400, color: '#f2f0ec', lineHeight: 1.15, marginBottom: 5 }}>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 28, fontWeight: 200, color: '#f2ede8', lineHeight: 1.15, marginBottom: 5 }}>
           Guten {timeOfDay},<br />{firstName}.
         </div>
         <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em', paddingBottom: 18 }}>{date}</div>
@@ -170,14 +170,14 @@ export function BriefingTab() {
           </div>
           {episode ? (
             <>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 400, color: '#e8e4dc', marginBottom: 3 }}>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, fontWeight: 300, color: '#f0ece6', marginBottom: 3 }}>
                 {episode.generatedAt ? formatDate(episode.generatedAt) : typeLabel}
               </div>
               <div style={{ fontSize: 10, color: '#333' }}>{episode.duration} Minuten</div>
             </>
           ) : (
             <>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 400, color: '#484440', marginBottom: 3 }}>
+              <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 15, fontWeight: 300, color: '#686460', marginBottom: 3 }}>
                 Noch kein Briefing vorhanden
               </div>
               <div style={{ fontSize: 10, color: '#333' }}>Tippe auf Generieren</div>

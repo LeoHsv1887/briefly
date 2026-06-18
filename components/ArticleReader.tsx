@@ -170,7 +170,7 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
             <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{timeAgo(article.publishedAt)}</span>
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 400, color: '#f0ece4', lineHeight: 1.3 }}>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 20, fontWeight: 300, color: '#f2ede8', lineHeight: 1.3 }}>
             {article.title}
           </div>
         </div>

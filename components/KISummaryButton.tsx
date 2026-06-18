@@ -53,14 +53,14 @@ export function KISummaryButton({ article, small = false, onArticleClick }: KISu
         onClick={handleClick}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 4,
-          fontSize: small ? 9 : 10,
+          fontSize: 11,
           color: '#666', background: 'var(--bg-subtle)',
           border: '0.5px solid #1a1a1a', borderRadius: 7,
           padding: small ? '3px 8px' : '5px 10px',
           cursor: 'pointer', userSelect: 'none',
         }}
       >
-        <Sparkles size={small ? 9 : 10} color="#666" />
+        <Sparkles size={11} color="#666" />
         {loading ? 'Lädt...' : open ? 'Ausblenden' : 'KI-Zusammenfassung'}
       </div>
       {!small && open && summary && (

@@ -58,7 +58,7 @@ function FeaturedCard({ article, onArticleClick }: { article: Article; onArticle
         </div>
       </div>
       <div style={{ padding: '14px 15px 15px' }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 400, color: '#ebe7df', lineHeight: 1.38, marginBottom: 11 }}>{article.title}</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 18, fontWeight: 300, color: '#f2ede8', lineHeight: 1.38, marginBottom: 11 }}>{article.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
           <KISummaryButton article={article} />
           <BookmarkButton article={article} />
@@ -79,7 +79,7 @@ function TrioCards({ articles, onArticleClick }: { articles: Article[]; onArticl
           </div>
           <div style={{ padding: '9px 10px 10px' }}>
             <div style={{ fontSize: 8, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 300, color: '#c8c4be', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
             <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
@@ -100,7 +100,7 @@ function FullCard({ article, onArticleClick }: { article: Article; onArticleClic
             <span style={{ fontSize: 9, color: '#1c1c1c' }}>{timeAgo(article.publishedAt)}</span>
             <span style={{ fontSize: 9, color: '#363636', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 7px' }}>{article.topic}</span>
           </div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 400, color: '#d0ccc4', lineHeight: 1.42, marginBottom: 9 }}>{article.title}</div>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, fontWeight: 300, color: '#f0ece6', lineHeight: 1.42, marginBottom: 9 }}>{article.title}</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} />
             <BookmarkButton article={article} />
@@ -117,7 +117,7 @@ function FullCard({ article, onArticleClick }: { article: Article; onArticleClic
 }
 
 function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnClick }) {
-  const flexValues = ['1.4', '1']
+  const flexValues = ['1.8', '1']
   return (
     <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0' }}>
       {articles.map((article, i) => (
@@ -131,7 +131,7 @@ function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArtic
               <span style={{ fontSize: 8, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
               <span style={{ fontSize: 7, color: '#303030', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 400, color: '#909090', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 300, color: '#c8c4be', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
             <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
