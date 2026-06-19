@@ -2,7 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { TOPICS } from './types';
 import type { Article } from './types';
 
-type ScoreResult = { id: string; score: number; topic: string };
+type ScoreResult = { id: string; score: number; topic: string; title?: string };
+
+const ENGLISH_SOURCES = new Set(['TechCrunch', 'The Verge', 'Reuters', 'Economist', 'Wired']);
 
 async function scoreBatch(articles: Article[]): Promise<ScoreResult[]> {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -10,7 +12,7 @@ async function scoreBatch(articles: Article[]): Promise<ScoreResult[]> {
   }
 
   const client = new Anthropic();
-  const list = articles.map((a) => ({ id: a.id, title: a.title, source: a.source }));
+  const list = articles.map((a) => ({ id: a.id, title: a.title, source: a.source, needsTranslation: ENGLISH_SOURCES.has(a.source) }));
 
   try {
     const msg = await client.messages.create({
@@ -49,8 +51,10 @@ WICHTIG – topic-Zuweisung nach INHALT, nicht nach Quelle:
 Bewerte folgende Artikel:
 ${JSON.stringify(list)}
 
+ÜBERSETZUNG: Falls ein Artikel "needsTranslation": true hat, füge ein Feld "title" mit einer natürlich klingenden deutschen Übersetzung des Titels hinzu. Fachbegriffe wie "AI", "Cloud", "App" dürfen auf Englisch bleiben. Bei deutschen Artikeln wird kein "title"-Feld benötigt.
+
 Antworte ausschließlich als JSON-Array ohne weiteren Text:
-[{"id":"...","score":8,"topic":"Technologie & KI"}]
+[{"id":"...","score":8,"topic":"Technologie & KI","title":"Optionale deutsche Übersetzung"}]
 
 Mögliche Themen: ${TOPICS.join(', ')}`,
         },
@@ -125,7 +129,9 @@ export async function scoreAndAssignTopics(articles: Article[]): Promise<Article
 
   return articles.map((a) => {
     const r = map.get(a.id);
-    let scored = r ? { ...a, score: r.score, topic: r.topic } : { ...a, score: 4 };
+    let scored = r
+      ? { ...a, title: r.title ?? a.title, score: r.score, topic: r.topic }
+      : { ...a, score: 4 };
     // Only boost clearly sport-specific titles — never override based on source alone
     if (SPORT_KEYWORDS.test(a.title)) {
       scored = { ...scored, topic: 'Sport', score: Math.max(scored.score, 6) };

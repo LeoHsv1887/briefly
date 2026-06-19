@@ -40,7 +40,7 @@ type OnClick = (article: Article) => void
 function FeaturedCard({ article, onArticleClick }: { article: Article; onArticleClick: OnClick }) {
   return (
     <div
-      style={{ margin: '14px 18px 0', borderRadius: 22, overflow: 'hidden', background: '#0e0e0e', border: '0.5px solid #181818', cursor: 'pointer' }}
+      style={{ margin: '14px 18px 0', borderRadius: 22, overflow: 'hidden', background: 'var(--bg0)', border: '0.5px solid var(--border)', cursor: 'pointer' }}
       onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}
     >
       <div style={{ height: 200, position: 'relative', overflow: 'hidden' }}>
@@ -58,7 +58,7 @@ function FeaturedCard({ article, onArticleClick }: { article: Article; onArticle
         </div>
       </div>
       <div style={{ padding: '14px 15px 15px' }}>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 18, fontWeight: 300, color: '#f2ede8', lineHeight: 1.38, marginBottom: 11 }}>{article.title}</div>
+        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 18, fontWeight: 500, color: '#ffffff', lineHeight: 1.38, marginBottom: 11 }}>{article.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
           <KISummaryButton article={article} />
           <BookmarkButton article={article} />
@@ -72,14 +72,14 @@ function TrioCards({ articles, onArticleClick }: { articles: Article[]; onArticl
   return (
     <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0' }}>
       {articles.map(article => (
-        <div key={article.id} style={{ flex: 1, background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
+        <div key={article.id} style={{ flex: 1, background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
           onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
           <div style={{ height: 64, background: '#111', overflow: 'hidden', position: 'relative' }}>
             {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
           </div>
           <div style={{ padding: '9px 10px 10px' }}>
-            <div style={{ fontSize: 8, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 300, color: '#c8c4be', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
+            <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
             <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
@@ -90,17 +90,17 @@ function TrioCards({ articles, onArticleClick }: { articles: Article[]; onArticl
 
 function FullCard({ article, onArticleClick }: { article: Article; onArticleClick: OnClick }) {
   return (
-    <div style={{ margin: '8px 18px 0', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, padding: '14px 15px', cursor: 'pointer' }}
+    <div style={{ margin: '8px 18px 0', background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 18, padding: '14px 15px', cursor: 'pointer' }}
       onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
-            <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c', flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#1c1c1c' }}>{timeAgo(article.publishedAt)}</span>
-            <span style={{ fontSize: 9, color: '#363636', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 7px' }}>{article.topic}</span>
+            <span style={{ fontSize: 9, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
+            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--border2)', flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: 'var(--t4)' }}>{timeAgo(article.publishedAt)}</span>
+            <span style={{ fontSize: 9, color: 'var(--t3)', background: 'var(--bg2)', border: '0.5px solid var(--border2)', borderRadius: 20, padding: '2px 7px' }}>{article.topic}</span>
           </div>
-          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, fontWeight: 300, color: '#f0ece6', lineHeight: 1.42, marginBottom: 9 }}>{article.title}</div>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, fontWeight: 500, color: '#ffffff', lineHeight: 1.42, marginBottom: 9 }}>{article.title}</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} />
             <BookmarkButton article={article} />
@@ -121,17 +121,17 @@ function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArtic
   return (
     <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0' }}>
       {articles.map((article, i) => (
-        <div key={article.id} style={{ flex: flexValues[i] ?? '1', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
+        <div key={article.id} style={{ flex: flexValues[i] ?? '1', background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
           onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
           <div style={{ height: 80, background: '#111', position: 'relative', overflow: 'hidden' }}>
             {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
           </div>
           <div style={{ padding: '10px 11px 11px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
-              <span style={{ fontSize: 8, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-              <span style={{ fontSize: 7, color: '#303030', background: '#0a0a0a', border: '0.5px solid #161616', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
+              <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+              <span style={{ fontSize: 7, color: 'var(--t3)', background: 'var(--bg2)', border: '0.5px solid var(--border2)', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
             </div>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 300, color: '#c8c4be', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
+            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
             <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
         </div>
@@ -142,17 +142,17 @@ function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArtic
 
 function ListCard({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnClick }) {
   return (
-    <div style={{ margin: '8px 18px 0', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden' }}>
+    <div style={{ margin: '8px 18px 0', background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
       {articles.map((article, i) => (
-        <div key={article.id} style={{ display: 'flex', gap: 10, padding: '10px 13px', borderBottom: i < articles.length - 1 ? '0.5px solid #0c0c0c' : 'none', cursor: 'pointer' }}
+        <div key={article.id} style={{ display: 'flex', gap: 10, padding: '10px 13px', borderBottom: i < articles.length - 1 ? '0.5px solid var(--border)' : 'none', cursor: 'pointer' }}
           onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-              <span style={{ fontSize: 9, color: '#282828', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-              <div style={{ width: 2, height: 2, borderRadius: '50%', background: '#1c1c1c', flexShrink: 0 }} />
-              <span style={{ fontSize: 9, color: '#181818' }}>{timeAgo(article.publishedAt)}</span>
+              <span style={{ fontSize: 9, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+              <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--border2)', flexShrink: 0 }} />
+              <span style={{ fontSize: 9, color: 'var(--t4)' }}>{timeAgo(article.publishedAt)}</span>
             </div>
-            <div style={{ fontSize: 11, color: '#848484', lineHeight: 1.35, marginBottom: 4 }}>{article.title}</div>
+            <div style={{ fontSize: 11, color: '#d8d4d0', lineHeight: 1.35, marginBottom: 4 }}>{article.title}</div>
             <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
           </div>
           {article.imageUrl && (
@@ -222,9 +222,9 @@ export function NewsTab({ articles, onArticleClick }: Props) {
         {FILTERS.map(f => (
           <div key={f} onClick={() => setActiveFilter(f)} style={{
             fontSize: 10, fontWeight: 400,
-            color: activeFilter === f ? '#ede9e0' : '#2a2a2a',
-            background: activeFilter === f ? '#161616' : '#0e0e0e',
-            border: `0.5px solid ${activeFilter === f ? '#2a2a2a' : '#141414'}`,
+            color: activeFilter === f ? '#ffffff' : 'var(--t3)',
+            background: activeFilter === f ? 'var(--bg2)' : 'var(--bg1)',
+            border: `0.5px solid ${activeFilter === f ? 'var(--border2)' : 'var(--border)'}`,
             borderRadius: 20, padding: '5px 12px', whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0,
           }}>{f}</div>
         ))}
@@ -232,7 +232,7 @@ export function NewsTab({ articles, onArticleClick }: Props) {
 
       {filtered.length > 0
         ? renderArticles(filtered, onArticleClick)
-        : <div style={{ padding: '60px 18px', textAlign: 'center' }}><p style={{ fontSize: 14, color: '#2a2a2a' }}>Keine Artikel für diesen Filter.</p></div>
+        : <div style={{ padding: '60px 18px', textAlign: 'center' }}><p style={{ fontSize: 14, color: 'var(--t3)' }}>Keine Artikel für diesen Filter.</p></div>
       }
 
       <div style={{ height: 16 }} />

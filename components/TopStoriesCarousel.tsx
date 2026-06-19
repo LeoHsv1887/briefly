@@ -154,7 +154,7 @@ export default function TopStoriesCarousel({ articles, onArticleClick }: Props) 
           background: 'var(--bg-card)',
           borderRadius: 22,
           overflow: 'hidden',
-          border: '0.5px solid #181818',
+          border: '0.5px solid var(--border)',
           cursor: 'pointer',
         }}
         onClick={() => {
@@ -173,7 +173,7 @@ export default function TopStoriesCarousel({ articles, onArticleClick }: Props) 
             justifyContent: 'space-between',
             padding: 14,
             overflow: 'hidden',
-            background: '#0a0a0a',
+            background: 'var(--bg0)',
           }}
         >
           <HeroImage key={article.id} article={article} />
@@ -235,8 +235,8 @@ export default function TopStoriesCarousel({ articles, onArticleClick }: Props) 
             style={{
               fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif",
               fontSize: 17,
-              fontWeight: 300,
-              color: '#f2ede8',
+              fontWeight: 500,
+              color: '#ffffff',
               lineHeight: 1.4,
               marginBottom: 12,
             }}

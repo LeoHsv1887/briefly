@@ -199,13 +199,13 @@ export default function App() {
           className="no-scrollbar"
           style={{
             display: 'flex',
-            padding: '0 22px',
-            borderBottom: '0.5px solid #0e0e0e',
+            padding: '0 18px',
+            borderBottom: '1px solid var(--border2)',
             overflowX: 'auto',
             scrollbarWidth: 'none',
             position: 'sticky',
             top: 0,
-            background: 'var(--bg-primary)',
+            background: 'var(--bg0)',
             zIndex: 10,
           }}
         >
@@ -214,15 +214,16 @@ export default function App() {
               key={t}
               onClick={() => goTo(t)}
               style={{
-                fontSize: 12,
-                fontWeight: activeTab === t ? 400 : 300,
-                color: activeTab === t ? '#ede9e0' : '#2a2a2a',
+                fontSize: 13,
+                fontWeight: activeTab === t ? 600 : 400,
+                color: activeTab === t ? '#ffffff' : 'var(--t3)',
                 padding: '14px 0',
-                marginRight: 24,
-                borderBottom: activeTab === t ? '1px solid #ede9e0' : '1px solid transparent',
+                marginRight: 22,
+                borderBottom: activeTab === t ? '2px solid #ffffff' : '2px solid transparent',
                 whiteSpace: 'nowrap',
                 cursor: 'pointer',
                 flexShrink: 0,
+                transition: 'color 0.15s ease',
               }}
             >
               {TAB_LABELS[t]}
@@ -315,10 +316,11 @@ export default function App() {
           right: 0,
           display: 'flex',
           justifyContent: 'space-around',
-          padding: '12px 10px calc(6px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '0.5px solid #0e0e0e',
-          background: 'var(--bg-primary)',
+          padding: '14px 10px calc(10px + env(safe-area-inset-bottom, 0px))',
+          borderTop: '1px solid var(--border2)',
+          background: 'var(--bg1)',
           zIndex: 20,
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.25)',
         }}
       >
         {BOTTOM_NAV.map(({ Icon, label, tab }) => (
@@ -329,19 +331,21 @@ export default function App() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 3,
-              color: activeTab === tab ? '#ede9e0' : '#1c1c1c',
-              fontSize: 9,
-              letterSpacing: '0.05em',
+              gap: 4,
+              color: activeTab === tab ? '#ffffff' : 'var(--t4)',
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
               textTransform: 'uppercase',
               cursor: 'pointer',
               background: 'none',
               border: 'none',
               padding: '4px 8px',
+              transition: 'color 0.15s ease',
             }}
             aria-label={label}
           >
-            <Icon size={18} strokeWidth={1.6} />
+            <Icon size={21} strokeWidth={1.6} />
             <span>{label}</span>
           </button>
         ))}

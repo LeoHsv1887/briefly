@@ -95,7 +95,7 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
               <span style={{ fontSize: 10, color: 'var(--t4)' }}>{relTime(article.publishedAt)}</span>
               <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
             </div>
-            <div style={{ fontSize: 16, fontFamily: SF, fontWeight: 300, color: 'var(--t2)', lineHeight: 1.38, letterSpacing: '-0.02em', marginBottom: 9 }}>
+            <div style={{ fontSize: 16, fontFamily: SF, fontWeight: 500, color: '#ffffff', lineHeight: 1.38, letterSpacing: '-0.02em', marginBottom: 9 }}>
               {article.title}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} onClick={e => e.stopPropagation()}>
@@ -111,7 +111,7 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
           </div>
         </div>
         {summaryOpen && summary && (
-          <div onClick={e => e.stopPropagation()} style={{ fontSize: 13, color: 'var(--t3)', lineHeight: 1.65, marginTop: 10, padding: '10px 12px', background: 'var(--bg2)', borderRadius: 10, borderLeft: '2px solid var(--border2)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ fontSize: 13, color: '#d8d4d0', lineHeight: 1.65, marginTop: 10, padding: '10px 12px', background: 'var(--bg2)', borderRadius: 10, borderLeft: '2px solid var(--border2)' }}>
             {summary}
           </div>
         )}
@@ -133,7 +133,7 @@ function HalfCard({ article, onArticleClick }: { article: Article; onArticleClic
             <span style={{ fontSize: 10, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
             <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 5px', borderRadius: 8, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
           </div>
-          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 300, color: 'var(--t3)', lineHeight: 1.38, letterSpacing: '-0.01em', marginBottom: 7 }}>
+          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 500, color: '#ffffff', lineHeight: 1.38, letterSpacing: '-0.01em', marginBottom: 7 }}>
             {article.title}
           </div>
           <div onClick={e => e.stopPropagation()}>
@@ -164,7 +164,7 @@ function HorizontalCard({ article, onArticleClick }: { article: Article; onArtic
             <span style={{ fontSize: 10, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
             <span style={{ fontSize: 10, color: 'var(--t4)' }}>{relTime(article.publishedAt)}</span>
           </div>
-          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 400, color: 'var(--t2)', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
+          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
             {article.title}
           </div>
         </div>
@@ -186,7 +186,7 @@ function CompactItem({ article, isLast, onArticleClick }: { article: Article; is
             <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--border2)', flexShrink: 0 }} />
             <span style={{ fontSize: 10, color: 'var(--t4)' }}>{relTime(article.publishedAt)}</span>
           </div>
-          <div style={{ fontSize: 13, fontFamily: SF, color: 'var(--t3)', lineHeight: 1.38, marginBottom: 5 }}>{article.title}</div>
+          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 400, color: '#d8d4d0', lineHeight: 1.38, marginBottom: 5 }}>{article.title}</div>
           <div onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} />
           </div>

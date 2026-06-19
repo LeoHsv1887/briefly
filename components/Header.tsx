@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Sun, Cloud, CloudSun, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning } from 'lucide-react';
 import type { TickerData, Settings } from '@/lib/types';
 
 interface HeaderProps {
@@ -19,8 +20,19 @@ function getGreeting(hour: number): string {
 interface WeatherInfo {
   city: string;
   temp: number;
-  icon: string;
   label: string;
+  weatherCode: number;
+}
+
+function getWeatherIcon(code: number) {
+  if (code === 0) return Sun;
+  if (code <= 2) return CloudSun;
+  if (code === 3) return Cloud;
+  if (code <= 49) return CloudFog;
+  if (code <= 59) return CloudDrizzle;
+  if (code <= 69) return CloudRain;
+  if (code <= 79) return CloudSnow;
+  return CloudLightning;
 }
 
 export default function Header({ dax, articleCount, settings }: HeaderProps) {
@@ -79,21 +91,24 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
         {greeting},<br />{firstName}.
       </div>
       <div style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.01em', marginBottom: weather ? 8 : 14 }}>{date}</div>
-      {weather && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 12, color: 'var(--t3)',
-            background: 'var(--bg1)', border: '0.5px solid var(--border)',
-            borderRadius: 20, padding: '4px 10px',
-          }}>
-            <i className={`ti ti-${weather.icon}`} style={{ fontSize: 13 }} />
-            <span>{weather.temp}°C</span>
-            <span style={{ color: 'var(--t4)' }}>·</span>
-            <span style={{ color: 'var(--t4)' }}>{weather.city}</span>
+      {weather && (() => {
+        const WeatherIcon = getWeatherIcon(weather.weatherCode);
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontSize: 12, color: 'var(--t3)',
+              background: 'var(--bg1)', border: '0.5px solid var(--border)',
+              borderRadius: 20, padding: '4px 10px',
+            }}>
+              <WeatherIcon size={13} strokeWidth={1.5} />
+              <span>{weather.temp}°C</span>
+              <span style={{ color: 'var(--t4)' }}>·</span>
+              <span style={{ color: 'var(--t4)' }}>{weather.city}</span>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 18 }}>
         <div style={chipStyle}>
           <span className="live-dot" />

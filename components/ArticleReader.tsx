@@ -99,7 +99,7 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: '#060606', zIndex: 100,
+      position: 'fixed', inset: 0, background: 'var(--bg0)', zIndex: 100,
       overflowY: 'auto', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
     }}>
 
@@ -177,24 +177,24 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
       </div>
 
       {/* ── Content-Bereich ── */}
-      <div style={{ background: '#080808', padding: '18px 22px 0' }}>
+      <div style={{ background: 'var(--bg0)', padding: '18px 22px 0' }}>
 
         {/* KI-Zusammenfassung */}
-        <div style={{ background: '#0e0e0e', border: '0.5px solid #1a1a1a', borderRadius: 14, padding: '13px 14px', marginBottom: 22 }}>
+        <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '13px 14px', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: summaryOpen ? 10 : 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Sparkles size={11} color="#555" />
               <span style={{ fontSize: 9, fontWeight: 500, color: '#444', letterSpacing: '0.06em', textTransform: 'uppercase' }}>KI-Zusammenfassung</span>
             </div>
-            <span onClick={() => setSummaryOpen(o => !o)} style={{ fontSize: 10, color: '#2a2a2a', cursor: 'pointer' }}>
+            <span onClick={() => setSummaryOpen(o => !o)} style={{ fontSize: 10, color: 'var(--t4)', cursor: 'pointer' }}>
               {summaryOpen ? 'Ausblenden' : 'Einblenden'}
             </span>
           </div>
           {summaryOpen && (
-            <div style={{ fontSize: 12, color: '#686460', lineHeight: 1.7 }}>
+            <div style={{ fontSize: 12, color: '#d8d4d0', lineHeight: 1.7 }}>
               {loadingSummary
-                ? <span style={{ color: '#2a2a2a' }}>Zusammenfassung wird geladen…</span>
-                : (summary ?? <span style={{ color: '#2a2a2a' }}>Nicht verfügbar.</span>)
+                ? <span style={{ color: 'var(--t4)' }}>Zusammenfassung wird geladen…</span>
+                : (summary ?? <span style={{ color: 'var(--t4)' }}>Nicht verfügbar.</span>)
               }
             </div>
           )}
@@ -202,18 +202,18 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <div style={{ flex: 1, height: '0.5px', background: '#111' }} />
-          <span style={{ fontSize: 9, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <div style={{ flex: 1, height: '0.5px', background: 'var(--bg1)' }} />
+          <span style={{ fontSize: 9, color: 'var(--t4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {isPaywall ? 'Vorschau' : 'Vollständiger Artikel'}
           </span>
-          <div style={{ flex: 1, height: '0.5px', background: '#111' }} />
+          <div style={{ flex: 1, height: '0.5px', background: 'var(--bg1)' }} />
         </div>
 
         {/* Paywall-Hinweis */}
         {isPaywall && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 10, padding: '9px 12px', marginBottom: 14 }}>
-            <Lock size={13} color="#2a2a2a" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: '#2a2a2a', lineHeight: 1.4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 10, padding: '9px 12px', marginBottom: 14 }}>
+            <Lock size={13} color="var(--t4)" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: 'var(--t4)', lineHeight: 1.4 }}>
               Dieser Artikel ist teilweise hinter einer Paywall. Es wird so viel wie möglich angezeigt.
             </span>
           </div>
@@ -222,21 +222,21 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
         {/* Artikel-Text */}
         {loadingText ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '20px 0', marginBottom: 16 }}>
-            <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid #1e1e1e', borderTopColor: '#3a3a3a', animation: 'spin 0.7s linear infinite' }} />
-            <span style={{ fontSize: 11, color: '#2a2a2a' }}>Artikel wird geladen…</span>
+            <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--border)', borderTopColor: 'var(--t4)', animation: 'spin 0.7s linear infinite' }} />
+            <span style={{ fontSize: 11, color: 'var(--t4)' }}>Artikel wird geladen…</span>
           </div>
         ) : articleText ? (
           <div style={{ marginBottom: 24 }}>
             {articleText.split('\n\n').map((paragraph, i) =>
               paragraph.trim().length > 0 && (
-                <p key={i} style={{ fontSize: 15, color: '#9a9690', lineHeight: 1.85, marginBottom: 16, fontWeight: 300 }}>
+                <p key={i} style={{ fontSize: 15, color: '#d8d4d0', lineHeight: 1.85, marginBottom: 16, fontWeight: 400 }}>
                   {paragraph.trim()}
                 </p>
               )
             )}
           </div>
         ) : (
-          <div style={{ fontSize: 13, color: '#2a2a2a', lineHeight: 1.7, marginBottom: 20, fontStyle: 'italic' }}>
+          <div style={{ fontSize: 13, color: 'var(--t4)', lineHeight: 1.7, marginBottom: 20, fontStyle: 'italic' }}>
             Artikel-Text konnte nicht geladen werden.
           </div>
         )}
@@ -244,24 +244,24 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
         {/* Original-Link */}
         <div
           onClick={() => window.open(article.url, '_blank')}
-          style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, cursor: 'pointer' }}
+          style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, cursor: 'pointer' }}
         >
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: '#0a0a0a', border: '0.5px solid #141414', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ExternalLink size={13} color="#2a2a2a" />
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg1)', border: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ExternalLink size={13} color="var(--t4)" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: '#686460' }}>
+            <div style={{ fontSize: 11, color: 'var(--t3)' }}>
               {isPaywall ? 'Vollständigen Artikel lesen (Abo erforderlich)' : 'Artikel auf Originalseite öffnen'}
             </div>
-            <div style={{ fontSize: 9, color: '#2a2a2a', marginTop: 2 }}>{hostname(article.url)}</div>
+            <div style={{ fontSize: 9, color: 'var(--t4)', marginTop: 2 }}>{hostname(article.url)}</div>
           </div>
-          <ChevronRight size={13} color="#1c1c1c" />
+          <ChevronRight size={13} color="var(--t4)" />
         </div>
 
         {/* Ähnliche Artikel */}
         {relatedArticles.length > 0 && (
           <>
-            <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
               Ähnliche Artikel
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 40 }}>
@@ -269,19 +269,19 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
                 <div
                   key={related.id}
                   onClick={() => window.open(related.url, '_blank')}
-                  style={{ background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 14, padding: '12px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '12px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 9, color: '#2a2a2a', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                    <div style={{ fontSize: 9, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
                       {related.source} · {timeAgo(related.publishedAt)}
                     </div>
-                    <div style={{ fontSize: 12, color: '#848484', lineHeight: 1.4 }}>{related.title}</div>
+                    <div style={{ fontSize: 12, color: '#d8d4d0', lineHeight: 1.4 }}>{related.title}</div>
                   </div>
-                  <div style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: '#141414' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: 'var(--bg2)' }}>
                     {related.imageUrl ? (
                       <img src={related.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} onError={e => (e.currentTarget.style.display = 'none')} />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', background: '#111' }} />
+                      <div style={{ width: '100%', height: '100%', background: 'var(--bg1)' }} />
                     )}
                   </div>
                 </div>
