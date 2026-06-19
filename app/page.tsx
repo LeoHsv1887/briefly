@@ -164,11 +164,11 @@ export default function App() {
       }}>
         <div style={{
           width: 16, height: 16, borderRadius: '50%',
-          border: '1.5px solid #1e1e1e',
-          borderTopColor: isRefreshing ? '#4a4a4a' : '#2a2a2a',
+          border: '1.5px solid var(--border)',
+          borderTopColor: isRefreshing ? 'var(--t3)' : 'var(--border2)',
           animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
         }} />
-        <span style={{ fontSize: 11, color: '#2a2a2a' }}>
+        <span style={{ fontSize: 11, color: 'var(--t3)' }}>
           {isRefreshing
             ? 'Wird aktualisiert…'
             : pullDistance >= PULL_THRESHOLD
@@ -338,10 +338,11 @@ export default function App() {
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              background: 'none',
+              background: activeTab === tab ? 'var(--bg2)' : 'none',
               border: 'none',
-              padding: '4px 8px',
-              transition: 'color 0.15s ease',
+              borderRadius: 14,
+              padding: '6px 10px',
+              transition: 'color 0.15s ease, background 0.15s ease',
             }}
             aria-label={label}
           >

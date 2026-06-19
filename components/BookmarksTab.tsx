@@ -142,7 +142,7 @@ export function BookmarksTab({ onArticleClick }: BookmarksTabProps) {
           <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 16, color: 'var(--t3)', textAlign: 'center' }}>
             Noch nichts gespeichert.
           </div>
-          <div style={{ fontSize: 12, color: '#1e1e1e', textAlign: 'center', lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: 'var(--t3)', textAlign: 'center', lineHeight: 1.6 }}>
             Tippe auf das Lesezeichen-Icon,<br />um Artikel zu speichern.
           </div>
         </div>

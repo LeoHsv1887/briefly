@@ -123,18 +123,20 @@ function BigCard({ article, onArticleClick }: { article: Article; onArticleClick
 function HalfCard({ article, onArticleClick }: { article: Article; onArticleClick: (a: Article) => void }) {
   const tc = getTopicColors(article.topic ?? '')
   return (
-    <div onClick={() => { trackInteraction(article.topic); onArticleClick(article) }} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
-      <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', height: '100%' }}>
-        <div style={{ height: 70, position: 'relative', overflow: 'hidden', background: tc.bg }}>
+    <div onClick={() => { trackInteraction(article.topic); onArticleClick(article) }} style={{ flex: 1, minWidth: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: 90, position: 'relative', overflow: 'hidden', background: tc.bg, flexShrink: 0 }}>
           {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} onError={e => (e.currentTarget.style.display = 'none')} />}
         </div>
-        <div style={{ padding: '10px 11px 11px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 10, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 5px', borderRadius: 8, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
-          </div>
-          <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 500, color: '#ffffff', lineHeight: 1.38, letterSpacing: '-0.01em', marginBottom: 7 }}>
-            {article.title}
+        <div style={{ padding: '10px 11px 11px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 10, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 5px', borderRadius: 8, background: tc.bg, color: tc.color, border: `0.5px solid ${tc.border}` }}>{article.topic}</span>
+            </div>
+            <div style={{ fontSize: 13, fontFamily: SF, fontWeight: 500, color: '#ffffff', lineHeight: 1.38, letterSpacing: '-0.01em', marginBottom: 7 }}>
+              {article.title}
+            </div>
           </div>
           <div onClick={e => e.stopPropagation()}>
             <KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} />
@@ -243,7 +245,7 @@ export function FeedSection({ title, articles, initialCount = 7, onArticleClick 
       <BigCard article={bigCard} onArticleClick={onArticleClick} />
 
       {halfCards.length > 0 && (
-        <div style={{ display: 'flex', gap: 7, marginBottom: 8 }}>
+        <div style={{ display: 'flex', gap: 7, marginBottom: 8, alignItems: 'stretch' }}>
           {halfCards.map(article => (
             <HalfCard key={article.id} article={article} onArticleClick={onArticleClick} />
           ))}

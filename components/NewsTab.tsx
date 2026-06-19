@@ -15,6 +15,16 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })
 }
 
+function getTopicColors(topic: string) {
+  if (['Wirtschaft & Finanzen', 'Aktienmärkte & Investing', 'Aktienmärkte'].includes(topic))
+    return { bg: 'var(--eco-bg)', color: 'var(--eco-t)', border: 'var(--eco-border)' }
+  if (['Politik (DE/EU)', 'Politik DE/EU', 'Geopolitik & Welt', 'Geopolitik'].includes(topic))
+    return { bg: 'var(--pol-bg)', color: 'var(--pol-t)', border: 'var(--pol-border)' }
+  if (topic === 'Technologie & KI')
+    return { bg: 'var(--tec-bg)', color: 'var(--tec-t)', border: 'var(--tec-border)' }
+  return { bg: 'var(--mkt-bg)', color: 'var(--mkt-t)', border: 'var(--mkt-border)' }
+}
+
 function BookmarkButton({ article }: { article: Article }) {
   const [saved, setSaved] = useState(() => isBookmarked(article.id))
 
@@ -28,7 +38,7 @@ function BookmarkButton({ article }: { article: Article }) {
 
   return (
     <button onClick={handleClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, flexShrink: 0 }} aria-label={saved ? 'Gespeichert' : 'Speichern'}>
-      <Bookmark size={15} color={saved ? '#4a9e6a' : '#1a1a1a'} fill={saved ? '#4a9e6a' : 'none'} strokeWidth={1.8} />
+      <Bookmark size={15} color={saved ? '#4a9e6a' : 'var(--t4)'} fill={saved ? '#4a9e6a' : 'none'} strokeWidth={1.8} />
     </button>
   )
 }
@@ -70,20 +80,25 @@ function FeaturedCard({ article, onArticleClick }: { article: Article; onArticle
 
 function TrioCards({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnClick }) {
   return (
-    <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0' }}>
-      {articles.map(article => (
-        <div key={article.id} style={{ flex: 1, background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
-          onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
-          <div style={{ height: 64, background: '#111', overflow: 'hidden', position: 'relative' }}>
-            {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
+    <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0', alignItems: 'stretch' }}>
+      {articles.map(article => {
+        const tc = getTopicColors(article.topic ?? '')
+        return (
+          <div key={article.id} style={{ flex: 1, background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+            onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
+            <div style={{ height: 70, background: tc.bg, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+              {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
+            </div>
+            <div style={{ padding: '9px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
+                <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
+              </div>
+              <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
+            </div>
           </div>
-          <div style={{ padding: '9px 10px 10px' }}>
-            <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>{article.source}</div>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 5 }}>{article.title}</div>
-            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -117,25 +132,29 @@ function FullCard({ article, onArticleClick }: { article: Article; onArticleClic
 }
 
 function SplitCards({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnClick }) {
-  const flexValues = ['1.8', '1']
   return (
-    <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0' }}>
-      {articles.map((article, i) => (
-        <div key={article.id} style={{ flex: flexValues[i] ?? '1', background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer' }}
-          onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
-          <div style={{ height: 80, background: '#111', position: 'relative', overflow: 'hidden' }}>
-            {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
-          </div>
-          <div style={{ padding: '10px 11px 11px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
-              <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
-              <span style={{ fontSize: 7, color: 'var(--t3)', background: 'var(--bg2)', border: '0.5px solid var(--border2)', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
+    <div style={{ display: 'flex', gap: 7, padding: '8px 18px 0', alignItems: 'stretch' }}>
+      {articles.map(article => {
+        const tc = getTopicColors(article.topic ?? '')
+        return (
+          <div key={article.id} style={{ flex: 1, background: 'var(--bg0)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden', minWidth: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+            onClick={() => { trackInteraction(article.topic); onArticleClick(article) }}>
+            <div style={{ height: 90, background: tc.bg, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+              {article.imageUrl && <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.65, position: 'absolute', inset: 0 }} onError={e => (e.currentTarget.style.display = 'none')} />}
             </div>
-            <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
-            <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
+            <div style={{ padding: '10px 11px 11px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
+                  <span style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{article.source}</span>
+                  <span style={{ fontSize: 7, color: 'var(--t3)', background: 'var(--bg2)', border: '0.5px solid var(--border2)', borderRadius: 20, padding: '2px 5px' }}>{article.topic}</span>
+                </div>
+                <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 13, fontWeight: 500, color: '#ffffff', lineHeight: 1.35, marginBottom: 6 }}>{article.title}</div>
+              </div>
+              <div onClick={e => e.stopPropagation()}><KISummaryButton article={article} small onArticleClick={() => onArticleClick(article)} /></div>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

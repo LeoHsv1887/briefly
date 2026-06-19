@@ -13,8 +13,8 @@ export default function TickerBar({ tickers }: TickerBarProps) {
     <div
       style={{
         display: 'flex',
-        borderTop: '0.5px solid #111',
-        borderBottom: '0.5px solid #111',
+        borderTop: '0.5px solid var(--border)',
+        borderBottom: '0.5px solid var(--border)',
       }}
     >
       {tickers.map((t, i) => (
@@ -23,15 +23,15 @@ export default function TickerBar({ tickers }: TickerBarProps) {
           style={{
             flex: 1,
             padding: '10px 14px',
-            borderRight: i < tickers.length - 1 ? '0.5px solid #111' : 'none',
+            borderRight: i < tickers.length - 1 ? '0.5px solid var(--border)' : 'none',
             minWidth: 0,
           }}
         >
           <div
             style={{
               fontSize: 9,
-              color: '#2a2a2a',
-              fontWeight: 500,
+              color: '#ffffff',
+              fontWeight: 600,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               marginBottom: 3,
@@ -46,7 +46,7 @@ export default function TickerBar({ tickers }: TickerBarProps) {
             style={{
               fontSize: 13,
               fontWeight: 400,
-              color: '#d8d4cc',
+              color: '#ffffff',
               letterSpacing: '-0.01em',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -72,7 +72,7 @@ export default function TickerBar({ tickers }: TickerBarProps) {
               style={{
                 fontSize: 9,
                 marginTop: 1,
-                color: '#2a2a2a',
+                color: 'var(--t4)',
               }}
             >
               Schluss

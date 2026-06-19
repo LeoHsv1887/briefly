@@ -30,14 +30,14 @@ const DEFAULT_FAVORITES: FavoriteStock[] = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function relTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const min = Math.floor(diff / 60_000);
-  if (min < 1) return 'gerade';
-  if (min < 60) return `vor ${min} Min.`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `vor ${h} Std.`;
-  return new Date(dateStr).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+function newsDate(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Heute';
+  if (diffDays === 1) return 'Gestern';
+  if (diffDays < 7) return `vor ${diffDays} Tagen`;
+  return date.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
 }
 
 function fmtPrice(p: number): string {
@@ -85,7 +85,7 @@ function Sparkline({ points, isPositive }: { points: HistoryPoint[]; isPositive:
   if (points.length < 2) {
     return (
       <svg viewBox="0 0 100 28" preserveAspectRatio="none" style={{ width: '100%', height: 28 }}>
-        <line x1="0" y1="14" x2="100" y2="14" stroke="#1a1a1a" strokeWidth={1} />
+        <line x1="0" y1="14" x2="100" y2="14" stroke="var(--border)" strokeWidth={1} />
       </svg>
     );
   }
@@ -118,7 +118,7 @@ function Sparkline({ points, isPositive }: { points: HistoryPoint[]; isPositive:
 
 function HistoryChart({ points, isPositive }: { points: HistoryPoint[]; isPositive: boolean }) {
   if (points.length < 2) {
-    return <div style={{ height: 80, background: '#0e0e0e', borderRadius: 6 }} />;
+    return <div style={{ height: 80, background: 'var(--bg2)', borderRadius: 6 }} />;
   }
   const closes = points.map(p => p.close);
   const min = Math.min(...closes);
@@ -185,7 +185,7 @@ function StockNewsCarousel({ news, favorites }: { news: StockNewsItem[]; favorit
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '14px 18px 8px' }}>
+      <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '14px 18px 8px' }}>
         News zu deinen Aktien
       </div>
       <div
@@ -203,29 +203,29 @@ function StockNewsCarousel({ news, favorites }: { news: StockNewsItem[]; favorit
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', width: 230, background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 14, padding: '10px 12px', scrollSnapAlign: 'start', textDecoration: 'none' }}
+              style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', width: 230, background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '10px 12px', scrollSnapAlign: 'start', textDecoration: 'none' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 6, background: badge.bg, color: badge.text }}>
                   {item.symbol}
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#2a2a2a' }}>
+                <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--t4)' }}>
                   {item.source}
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: '#c0c0c0', lineHeight: 1.4, marginBottom: 'auto', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              <p style={{ fontSize: 12, color: '#d8d4d0', lineHeight: 1.4, marginBottom: 'auto', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {item.title}
               </p>
               {hasSummary && (
-                <p style={{ fontSize: 11, lineHeight: 1.6, marginTop: 8, borderLeft: '2px solid #2a2a2a', paddingLeft: 8, color: '#686460' }}>
+                <p style={{ fontSize: 11, lineHeight: 1.6, marginTop: 8, borderLeft: '2px solid var(--border2)', paddingLeft: 8, color: 'var(--t3)' }}>
                   {summaries[item.url]}
                 </p>
               )}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                <span style={{ fontSize: 10, color: '#333' }}>{relTime(item.publishedAt)}</span>
+                <span style={{ fontSize: 10, color: 'var(--t4)' }}>{newsDate(item.publishedAt)}</span>
                 <button
                   onClick={e => handleSummarize(e, item)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', color: loadingSummary === item.url ? '#888' : '#444' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, background: 'none', border: 'none', cursor: 'pointer', color: loadingSummary === item.url ? 'var(--t3)' : 'var(--t4)' }}
                 >
                   <Sparkles size={10} strokeWidth={1.5} />
                   {loadingSummary === item.url ? 'Lädt…' : hasSummary ? 'Ausblenden' : 'KI-Zusammenfassung'}
@@ -240,7 +240,7 @@ function StockNewsCarousel({ news, favorites }: { news: StockNewsItem[]; favorit
         {news.map((_, i) => (
           <div
             key={i}
-            style={{ width: i === activeIdx ? 14 : 5, height: 5, borderRadius: i === activeIdx ? 3 : '50%', background: i === activeIdx ? '#666' : '#2a2a2a', transition: 'all 0.2s' }}
+            style={{ width: i === activeIdx ? 14 : 5, height: 5, borderRadius: i === activeIdx ? 3 : '50%', background: i === activeIdx ? 'var(--t3)' : 'var(--border2)', transition: 'all 0.2s' }}
           />
         ))}
       </div>
@@ -275,24 +275,24 @@ function DetailPanel({
   const isPositive = quote ? quote.isPositive : true;
 
   return (
-    <div style={{ margin: '8px 18px 0', background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 18, overflow: 'hidden' }}>
+    <div style={{ margin: '8px 18px 0', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
       <div style={{ padding: '13px 13px 12px' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#c0c0b8' }}>
-                {fav.symbol} <span style={{ color: '#2a2a2a' }}>·</span>{' '}
-                <span style={{ fontSize: 11, fontWeight: 400, color: '#2a2a2a' }}>{fav.exchange}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--t1)' }}>
+                {fav.symbol} <span style={{ color: 'var(--border2)' }}>·</span>{' '}
+                <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--t4)' }}>{fav.exchange}</span>
               </span>
               <button
                 onClick={onToggleFavorite}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
               >
-                <Star size={14} color={isFavorite ? '#c48a2a' : '#333'} fill={isFavorite ? '#c48a2a' : 'none'} strokeWidth={1.5} />
+                <Star size={14} color={isFavorite ? '#c48a2a' : 'var(--border2)'} fill={isFavorite ? '#c48a2a' : 'none'} strokeWidth={1.5} />
               </button>
             </div>
-            <span style={{ fontSize: 11, color: '#2a2a2a' }}>{fav.name}</span>
+            <span style={{ fontSize: 11, color: 'var(--t4)' }}>{fav.name}</span>
           </div>
           {quote && (
             <div style={{ textAlign: 'right' }}>
@@ -303,7 +303,7 @@ function DetailPanel({
                 {isPositive ? '+' : ''}{fmtPrice(quote.change)} ({isPositive ? '+' : ''}{quote.changePercent.toFixed(2)}%)
               </div>
               {quote.lastUpdated && (
-                <div style={{ fontSize: 9, marginTop: 4, color: '#2a2a2a' }}>
+                <div style={{ fontSize: 9, marginTop: 4, color: 'var(--t4)' }}>
                   Stand: {new Date(quote.lastUpdated).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' })} Uhr
                   {quote.marketState && quote.marketState !== 'REGULAR' ? ' · Markt geschlossen' : ''}
                 </div>
@@ -318,7 +318,7 @@ function DetailPanel({
             <button
               key={r}
               onClick={() => { setRange(r); fetchHistory(r); }}
-              style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: range === r ? '#1a1a1a' : 'transparent', color: range === r ? '#c8c4bc' : '#333', border: 'none', cursor: 'pointer' }}
+              style={{ fontSize: 11, fontWeight: 500, padding: '2px 8px', borderRadius: 6, background: range === r ? 'var(--bg2)' : 'transparent', color: range === r ? 'var(--t1)' : 'var(--t4)', border: 'none', cursor: 'pointer' }}
             >
               {r}
             </button>
@@ -332,15 +332,15 @@ function DetailPanel({
 
         {/* Stats */}
         {quote && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '0.5px solid #141414' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '0.5px solid var(--border)' }}>
             {[
               { label: 'Eröffnung', value: fmtPrice(quote.open) },
               { label: 'Tageshoch', value: fmtPrice(quote.high) },
               { label: 'Volumen',   value: fmtVol(quote.volume)  },
             ].map(({ label, value }) => (
               <div key={label}>
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2a2a2a' }}>{label}</div>
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#b0b0a8', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{value}</div>
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--t4)' }}>{label}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--t2)', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{value}</div>
               </div>
             ))}
           </div>
@@ -481,13 +481,16 @@ export default function StocksTab() {
 
       {/* ── Header ── */}
       <div style={{ padding: '22px 22px 0' }}>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 12, color: '#2a2a2a', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 22 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t4)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 20 }}>
           Briefly
         </div>
-        <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 28, fontWeight: 200, color: '#f2ede8', lineHeight: 1.15, marginBottom: 5 }}>
-          Märkte
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 }}>
+          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 30, fontWeight: 600, color: '#ffffff', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
+            Märkte
+          </div>
+          <TrendingUp size={20} color="var(--t4)" strokeWidth={1.5} />
         </div>
-        <div style={{ fontSize: 11, color: '#2e2e2e', letterSpacing: '0.03em', paddingBottom: 18 }}>
+        <div style={{ fontSize: 11, color: 'var(--t4)', letterSpacing: '0.03em', paddingBottom: 18 }}>
           {date}{time ? ` · ${time} Uhr` : ''}
         </div>
       </div>
@@ -503,15 +506,15 @@ export default function StocksTab() {
       )}
 
       {/* ── Divider ── */}
-      <div style={{ height: '0.5px', background: '#111', margin: '14px 18px 0' }} />
+      <div style={{ height: '0.5px', background: 'var(--border)', margin: '14px 18px 0' }} />
 
       {/* ── Search ── */}
       <div style={{ padding: '14px 18px', position: 'relative' }} ref={searchRef}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0e0e', border: '0.5px solid #141414', borderRadius: 12, padding: '9px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 12, padding: '9px 12px' }}>
           {searching ? (
-            <div style={{ width: 16, height: 16, border: '1px solid #1c1c1c', borderTopColor: '#666', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+            <div style={{ width: 16, height: 16, border: '1px solid var(--border)', borderTopColor: 'var(--t3)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
           ) : (
-            <Search size={16} color="#1e1e1e" strokeWidth={1.8} style={{ flexShrink: 0 }} />
+            <Search size={16} color="var(--t3)" strokeWidth={1.8} style={{ flexShrink: 0 }} />
           )}
           <input
             value={searchQuery}
@@ -523,25 +526,25 @@ export default function StocksTab() {
           />
           {searchQuery && (
             <button onClick={() => { setSearchQuery(''); setShowDropdown(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              <X size={14} color="#333" />
+              <X size={14} color="var(--t4)" />
             </button>
           )}
         </div>
 
         {/* Dropdown */}
         {showDropdown && searchResults.length > 0 && (
-          <div style={{ position: 'absolute', left: 18, right: 18, top: 'calc(100% - 6px)', zIndex: 30, background: '#0e0e0e', border: '0.5px solid #1c1c1c', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: 18, right: 18, top: 'calc(100% - 6px)', zIndex: 30, background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             {searchResults.map(r => (
               <div
                 key={r.symbol}
                 onMouseDown={() => handleSelectResult(r)}
-                style={{ padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid #141414', cursor: 'pointer' }}
+                style={{ padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid var(--border)', cursor: 'pointer' }}
               >
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#c8c4bc' }}>{r.symbol}</div>
-                  <div style={{ fontSize: 11, color: '#333', marginTop: 2 }}>{r.name} · {r.exchange}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--t1)' }}>{r.symbol}</div>
+                  <div style={{ fontSize: 11, color: 'var(--t4)', marginTop: 2 }}>{r.name} · {r.exchange}</div>
                 </div>
-                <ChevronRight size={14} color="#222" />
+                <ChevronRight size={14} color="var(--t4)" />
               </div>
             ))}
           </div>
@@ -549,29 +552,29 @@ export default function StocksTab() {
       </div>
 
       {/* ── Watchlist label ── */}
-      <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 18px 8px' }}>
+      <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 18px 8px' }}>
         Meine Favoriten
       </div>
 
       {/* ── Watchlist ── */}
       {quotesLoading ? (
-        <div style={{ margin: '0 18px', background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ margin: '0 18px', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
           {[0, 1, 2].map(i => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '11px 13px', borderBottom: i < 2 ? '0.5px solid #0a0a0a' : 'none', gap: 10 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '11px 13px', borderBottom: i < 2 ? '0.5px solid var(--border)' : 'none', gap: 10 }}>
               <div style={{ width: 80 }}>
-                <div style={{ height: 11, background: '#141414', borderRadius: 4, width: 45, marginBottom: 5 }} />
-                <div style={{ height: 8, background: '#141414', borderRadius: 4, width: 62 }} />
+                <div style={{ height: 11, background: 'var(--bg2)', borderRadius: 4, width: 45, marginBottom: 5 }} />
+                <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, width: 62 }} />
               </div>
-              <div style={{ flex: 1, height: 28, background: '#141414', borderRadius: 4 }} />
+              <div style={{ flex: 1, height: 28, background: 'var(--bg2)', borderRadius: 4 }} />
               <div style={{ width: 55, textAlign: 'right' }}>
-                <div style={{ height: 11, background: '#141414', borderRadius: 4, width: 50, marginBottom: 5 }} />
-                <div style={{ height: 8, background: '#141414', borderRadius: 4, width: 30, marginLeft: 'auto' }} />
+                <div style={{ height: 11, background: 'var(--bg2)', borderRadius: 4, width: 50, marginBottom: 5 }} />
+                <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, width: 30, marginLeft: 'auto' }} />
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div style={{ margin: '0 18px', background: 'var(--bg-card)', border: '0.5px solid #141414', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ margin: '0 18px', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
           {favorites.map((fav, i) => {
             const quote = quotes[fav.symbol] ?? null;
             const isSelected = selectedStock?.symbol === fav.symbol;
@@ -579,11 +582,11 @@ export default function StocksTab() {
               <div
                 key={fav.symbol}
                 onClick={() => setSelectedStock(isSelected ? null : fav)}
-                style={{ display: 'flex', alignItems: 'center', padding: '11px 13px', borderBottom: i < favorites.length - 1 ? '0.5px solid #0a0a0a' : 'none', cursor: 'pointer', background: isSelected ? '#0c0c0c' : 'transparent' }}
+                style={{ display: 'flex', alignItems: 'center', padding: '11px 13px', borderBottom: i < favorites.length - 1 ? '0.5px solid var(--border)' : 'none', cursor: 'pointer', background: isSelected ? 'var(--bg2)' : 'transparent' }}
               >
                 <div style={{ width: 90, flexShrink: 0 }}>
-                  <div style={{ fontSize: 12, color: '#c0c0b8', fontWeight: 500 }}>{fav.symbol}</div>
-                  <div style={{ fontSize: 9, color: '#2a2a2a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 82, marginTop: 2 }}>{fav.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--t1)', fontWeight: 500 }}>{fav.symbol}</div>
+                  <div style={{ fontSize: 9, color: 'var(--t4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 82, marginTop: 2 }}>{fav.name}</div>
                 </div>
                 <div style={{ flex: 1, padding: '0 8px' }}>
                   <Sparkline points={sparklines[fav.symbol] ?? []} isPositive={quote?.isPositive ?? true} />
@@ -598,7 +601,7 @@ export default function StocksTab() {
                   onClick={e => { e.stopPropagation(); removeFavorite(fav.symbol); }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 10px', flexShrink: 0 }}
                 >
-                  <Star size={13} color="#2a2a2a" fill="#2a2a2a" strokeWidth={0} />
+                  <Star size={13} color="var(--border2)" fill="var(--border2)" strokeWidth={0} />
                 </button>
               </div>
             );
@@ -610,10 +613,10 @@ export default function StocksTab() {
       <div style={{ margin: '8px 18px 0' }}>
         <button
           onClick={() => (document.querySelector('input[placeholder*="Aktie"]') as HTMLInputElement)?.focus()}
-          style={{ width: '100%', padding: '11px 0', borderRadius: 12, border: '0.5px dashed #1c1c1c', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
+          style={{ width: '100%', padding: '11px 0', borderRadius: 12, border: '0.5px dashed var(--border2)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
         >
-          <Plus size={16} color="#222" strokeWidth={1.5} />
-          <span style={{ fontSize: 11, color: '#222' }}>Hinzufügen</span>
+          <Plus size={16} color="var(--t3)" strokeWidth={1.5} />
+          <span style={{ fontSize: 11, color: 'var(--t3)' }}>Hinzufügen</span>
         </button>
       </div>
 
@@ -635,7 +638,7 @@ export default function StocksTab() {
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 6 }}>
             <button
               onClick={() => setSelectedStock(null)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#2a2a2a', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--t4)', background: 'none', border: 'none', cursor: 'pointer' }}
             >
               <ChevronUp size={14} /> Schließen
             </button>
@@ -644,13 +647,13 @@ export default function StocksTab() {
       )}
 
       {!selectedStock && favorites.length > 0 && (
-        <p style={{ textAlign: 'center', fontSize: 10, marginTop: 10, color: '#1e1e1e' }}>
+        <p style={{ textAlign: 'center', fontSize: 10, marginTop: 10, color: 'var(--t4)' }}>
           Eintrag antippen für Details
         </p>
       )}
 
       {typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_HAS_AV_KEY && (
-        <p style={{ textAlign: 'center', fontSize: 11, padding: '14px 18px', color: '#2a2a2a' }}>
+        <p style={{ textAlign: 'center', fontSize: 11, padding: '14px 18px', color: 'var(--t4)' }}>
           Für Live-Kurse ALPHA_VANTAGE_API_KEY in .env.local eintragen
         </p>
       )}

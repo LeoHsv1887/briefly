@@ -19,10 +19,10 @@ export function MarketBriefingCard({ onPress }: { onPress?: () => void }) {
   const sentiment = briefing.sentiment ?? 'neutral';
   const sentimentColor =
     sentiment === 'bullish' ? '#4a9e6a' :
-    sentiment === 'bearish' ? '#9e4a4a' : '#444';
+    sentiment === 'bearish' ? '#9e4a4a' : 'var(--t3)';
   const sentimentBg =
     sentiment === 'bullish' ? '#0a1a0e' :
-    sentiment === 'bearish' ? '#1a0a0a' : '#111';
+    sentiment === 'bearish' ? '#1a0a0a' : 'var(--bg2)';
   const sentimentLabel =
     sentiment === 'bullish' ? 'Bullish' :
     sentiment === 'bearish' ? 'Bearish' : 'Neutral';
@@ -54,7 +54,7 @@ export function MarketBriefingCard({ onPress }: { onPress?: () => void }) {
           <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
             Markteinschätzung
           </div>
-          <div style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.6, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6, marginBottom: 10 }}>
             {briefing.summary}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--t4)' }}>
@@ -88,15 +88,16 @@ interface BriefingData {
 }
 
 const INDICES = [
-  { key: 'dax',        label: 'DAX & Europa',  region: 'Deutschland · Europa' },
-  { key: 'nasdaq',     label: 'Nasdaq & USA',   region: 'Vereinigte Staaten'  },
-  { key: 'btc',        label: 'Bitcoin',         region: 'Kryptowährung'       },
-  { key: 'gold',       label: 'Gold',            region: 'Rohstoff'            },
+  { key: 'dax',    label: 'DAX & Europa', region: 'Deutschland · Europa', textKey: 'dax'        },
+  { key: 'nasdaq', label: 'Nasdaq & USA', region: 'Vereinigte Staaten',   textKey: 'usa'        },
+  { key: 'btc',    label: 'Bitcoin',       region: 'Kryptowährung',        textKey: 'crypto'     },
+  { key: 'gold',   label: 'Gold',          region: 'Rohstoff',             textKey: 'commodities'},
 ] as const;
 
 export function MarketBriefing() {
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -112,43 +113,67 @@ export function MarketBriefing() {
   if (isLoading) return <BriefingSkeleton />;
   if (!briefing) return null;
 
+  const sentiment = briefing.sentiment ?? 'neutral';
+  const sentimentColor =
+    sentiment === 'bullish' ? '#4a9e6a' :
+    sentiment === 'bearish' ? '#9e4a4a' : 'var(--t3)';
+  const sentimentLabel =
+    sentiment === 'bullish' ? 'Bullish' :
+    sentiment === 'bearish' ? 'Bearish' : 'Neutral';
+
   const indices = INDICES.map(i => ({ ...i, data: briefing.marketData[i.key] })).filter(i => i.data);
 
   return (
     <div>
       {/* Indizes */}
-      <div style={{ fontSize: 9, fontWeight: 500, color: '#1e1e1e', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 18px 8px' }}>
+      <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 18px 8px' }}>
         Indizes
       </div>
       <div style={{ margin: '0 18px', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
-        {indices.map(({ key, label, region, data }, i) => (
-          <div
-            key={key}
-            style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: i < indices.length - 1 ? '0.5px solid var(--border)' : 'none' }}
-          >
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg2)', border: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
-              <TrendingUp size={13} color="var(--t4)" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 300 }}>{label}</div>
-              <div style={{ fontSize: 9, color: 'var(--t4)', marginTop: 1 }}>{region}</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 12, fontWeight: 300, color: 'var(--t1)' }}>{data.price}</div>
-              <div style={{ fontSize: 9, fontWeight: 500, marginTop: 1, color: data.isPositive ? 'var(--up)' : 'var(--dn)' }}>
-                {data.isPositive ? '+' : ''}{data.changePercent}%
+        {indices.map(({ key, label, region, textKey, data }, i) => {
+          const detail = briefing[textKey as keyof BriefingData] as string | undefined;
+          const isOpen = expanded === key;
+          return (
+            <div key={key}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: (isOpen || i < indices.length - 1) ? '0.5px solid var(--border)' : 'none', cursor: detail ? 'pointer' : 'default' }}
+                onClick={() => detail && setExpanded(isOpen ? null : key)}
+              >
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg2)', border: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
+                  <TrendingUp size={13} color="var(--t4)" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 300 }}>{label}</div>
+                  <div style={{ fontSize: 9, color: 'var(--t4)', marginTop: 1 }}>{region}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 12, fontWeight: 300, color: 'var(--t1)' }}>{data.price}</div>
+                  <div style={{ fontSize: 9, fontWeight: 500, marginTop: 1, color: data.isPositive ? 'var(--up)' : 'var(--dn)' }}>
+                    {data.isPositive ? '+' : ''}{data.changePercent}%
+                  </div>
+                </div>
               </div>
+              {isOpen && detail && (
+                <div style={{ padding: '9px 13px 11px', borderBottom: i < indices.length - 1 ? '0.5px solid var(--border)' : 'none', background: 'var(--bg0)' }}>
+                  <p style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.6, margin: 0 }}>{detail}</p>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Markteinschätzung */}
       <div style={{ margin: '10px 18px 0', background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 16, padding: '12px 13px' }}>
-        <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 5 }}>
-          Markteinschätzung heute
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: 'var(--t4)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Markteinschätzung heute
+          </div>
+          <span style={{ fontSize: 9, fontWeight: 600, color: sentimentColor, background: sentiment === 'bullish' ? '#0a1a0e' : sentiment === 'bearish' ? '#1a0a0a' : 'var(--bg2)', border: `0.5px solid ${sentimentColor}`, borderRadius: 20, padding: '2px 8px' }}>
+            {sentimentLabel}
+          </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: 'var(--t2)', lineHeight: 1.6 }}>
           {briefing.summary}
         </div>
       </div>
@@ -159,18 +184,18 @@ export function MarketBriefing() {
 function BriefingSkeleton() {
   return (
     <div style={{ padding: '16px 18px 0' }}>
-      <div style={{ height: 9, background: '#0e0e0e', borderRadius: 4, width: 60, marginBottom: 12 }} />
-      <div style={{ background: '#0e0e0e', borderRadius: 18, overflow: 'hidden' }}>
+      <div style={{ height: 9, background: 'var(--bg2)', borderRadius: 4, width: 60, marginBottom: 12 }} />
+      <div style={{ background: 'var(--bg1)', borderRadius: 18, overflow: 'hidden' }}>
         {[0, 1, 2, 3].map(i => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: i < 3 ? '0.5px solid #0a0a0a' : 'none', gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: '#141414' }} />
+          <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '10px 13px', borderBottom: i < 3 ? '0.5px solid var(--border)' : 'none', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg2)' }} />
             <div style={{ flex: 1 }}>
-              <div style={{ height: 9, background: '#141414', borderRadius: 4, width: '55%', marginBottom: 5 }} />
-              <div style={{ height: 7, background: '#141414', borderRadius: 4, width: '35%' }} />
+              <div style={{ height: 9, background: 'var(--bg2)', borderRadius: 4, width: '55%', marginBottom: 5 }} />
+              <div style={{ height: 7, background: 'var(--bg2)', borderRadius: 4, width: '35%' }} />
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ height: 10, background: '#141414', borderRadius: 4, width: 50, marginBottom: 4 }} />
-              <div style={{ height: 8, background: '#141414', borderRadius: 4, width: 30 }} />
+              <div style={{ height: 10, background: 'var(--bg2)', borderRadius: 4, width: 50, marginBottom: 4 }} />
+              <div style={{ height: 8, background: 'var(--bg2)', borderRadius: 4, width: 30 }} />
             </div>
           </div>
         ))}
