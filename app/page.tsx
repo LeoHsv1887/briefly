@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Bookmark, Home, Newspaper, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
+import { Home, Mic, Newspaper, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
 import Header from '@/components/Header';
 import { BriefingTab } from '@/components/BriefingTab';
 import { PodcastBanner } from '@/components/PodcastBanner';
@@ -31,11 +31,11 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 const BOTTOM_NAV: { Icon: React.ComponentType<{ size: number; strokeWidth: number }>; label: string; tab: Tab }[] = [
-  { Icon: Home,         label: 'Feed',        tab: 'feed'      },
-  { Icon: Newspaper,    label: 'News',        tab: 'news'      },
-  { Icon: TrendingUp,   label: 'Märkte',      tab: 'stocks'    },
-  { Icon: Bookmark,     label: 'Gespeichert', tab: 'bookmarks' },
-  { Icon: SettingsIcon, label: 'Settings',    tab: 'settings'  },
+  { Icon: Home,         label: 'Feed',     tab: 'feed'     },
+  { Icon: Newspaper,    label: 'News',     tab: 'news'     },
+  { Icon: Mic,          label: 'Briefing', tab: 'briefing' },
+  { Icon: TrendingUp,   label: 'Märkte',   tab: 'stocks'   },
+  { Icon: SettingsIcon, label: 'Settings', tab: 'settings' },
 ];
 
 const PULL_THRESHOLD = 70;
@@ -316,40 +316,51 @@ export default function App() {
           right: 0,
           display: 'flex',
           justifyContent: 'space-around',
-          padding: '14px 10px calc(10px + env(safe-area-inset-bottom, 0px))',
+          alignItems: 'center',
+          padding: '10px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
           borderTop: '1px solid var(--border2)',
           background: 'var(--bg1)',
           zIndex: 20,
-          boxShadow: '0 -4px 16px rgba(0,0,0,0.25)',
+          boxShadow: '0 -8px 24px rgba(0,0,0,0.3)',
         }}
       >
-        {BOTTOM_NAV.map(({ Icon, label, tab }) => (
-          <button
-            key={tab}
-            onClick={() => goTo(tab)}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 4,
-              color: activeTab === tab ? '#ffffff' : 'var(--t4)',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              background: activeTab === tab ? 'var(--bg2)' : 'none',
-              border: 'none',
-              borderRadius: 14,
-              padding: '6px 10px',
-              transition: 'color 0.15s ease, background 0.15s ease',
-            }}
-            aria-label={label}
-          >
-            <Icon size={21} strokeWidth={1.6} />
-            <span>{label}</span>
-          </button>
-        ))}
+        {BOTTOM_NAV.map(({ Icon, label, tab }, i) => {
+          const isMiddle = i === 2;
+          const isActive = activeTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => goTo(tab)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+                color: isActive
+                  ? (isMiddle ? 'var(--pol-t)' : '#ffffff')
+                  : 'var(--t3)',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.03em',
+                cursor: 'pointer',
+                background: isActive
+                  ? (isMiddle ? 'var(--pol-bg)' : 'var(--bg2)')
+                  : 'transparent',
+                border: isMiddle
+                  ? `0.5px solid ${isActive ? 'var(--pol-border)' : 'transparent'}`
+                  : 'none',
+                borderRadius: 14,
+                padding: isMiddle ? '8px 14px' : '6px 10px',
+                transform: isMiddle ? 'translateY(-2px)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+              aria-label={label}
+            >
+              <Icon size={isMiddle ? 24 : 21} strokeWidth={1.6} />
+              <span>{label}</span>
+            </button>
+          );
+        })}
       </nav>
     </div>
   );

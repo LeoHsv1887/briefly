@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Play, Mic } from 'lucide-react'
+import { ChevronRight, Mic } from 'lucide-react'
 import { isMorningInGermany } from '@/lib/time'
 
 interface PodcastBannerProps {
@@ -9,14 +9,9 @@ interface PodcastBannerProps {
 
 export function PodcastBanner({ onNavigateToBriefing }: PodcastBannerProps) {
   const [episode, setEpisode] = useState<any>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
 
   const isMorning = isMorningInGermany()
   const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
-
-  const topics = isMorning
-    ? ['Wirtschaft', 'Politik', 'Technologie']
-    : ['Märkte', 'Nachrichten', 'Ausblick']
 
   useEffect(() => {
     const type = isMorning ? 'morning' : 'evening'
@@ -26,90 +21,53 @@ export function PodcastBanner({ onNavigateToBriefing }: PodcastBannerProps) {
       .catch(() => {})
   }, [])
 
-  async function generate(e: React.MouseEvent) {
-    e.stopPropagation()
-    setIsGenerating(true)
-    try {
-      const res = await fetch('/api/podcast/generate')
-      const data = await res.json()
-      if (data.success) {
-        setEpisode(data)
-        onNavigateToBriefing()
-      }
-    } catch (e) { console.error(e) }
-    setIsGenerating(false)
-  }
-
-  const mainText = episode
-    ? `Dein ${isMorning ? 'Morning' : 'Evening'} Briefing ist verfügbar`
-    : 'Jetzt dein Briefing bekommen'
+  const mainText = episode ? 'Jetzt dein Briefing anhören' : 'Briefing generieren'
 
   return (
     <div
-      onClick={episode ? onNavigateToBriefing : undefined}
+      onClick={onNavigateToBriefing}
       style={{
-        margin: '16px 18px 0',
+        margin: '14px 18px 0',
         background: 'var(--pol-bg)',
         border: '0.5px solid var(--pol-border)',
-        borderRadius: 22,
-        padding: '16px 18px',
+        borderRadius: 18,
+        padding: 14,
         position: 'relative',
         overflow: 'hidden',
-        cursor: episode ? 'pointer' : 'default',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        cursor: 'pointer',
       }}
     >
-      {/* Decorative background mic icon */}
+      {/* Decorative background mic */}
       <Mic
-        size={90}
-        color="var(--pol-border)"
-        style={{ position: 'absolute', right: -16, bottom: -16, opacity: 0.18, pointerEvents: 'none' }}
+        size={80}
+        style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, position: 'relative' }}>
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Mic size={18} color="var(--pol-t)" />
+      {/* Mic icon */}
+      <div style={{
+        width: 38, height: 38, borderRadius: 11,
+        background: 'rgba(90,138,186,0.15)', border: '0.5px solid rgba(90,138,186,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        position: 'relative', zIndex: 1,
+      }}>
+        <Mic size={17} color="var(--pol-t)" />
+      </div>
+
+      {/* Text */}
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--pol-t)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>
+          {typeLabel}
         </div>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--pol-t)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
-            {typeLabel}
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--t2)', lineHeight: 1.3 }}>
-            {mainText}
-          </div>
+        <div style={{ fontSize: 15, fontWeight: 500, color: '#ffffff' }}>
+          {mainText}
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {topics.map(t => (
-            <span key={t} style={{ fontSize: 9, color: 'var(--pol-t)', background: 'rgba(0,0,0,0.25)', border: '0.5px solid var(--pol-border)', borderRadius: 20, padding: '3px 8px' }}>
-              {t}
-            </span>
-          ))}
-        </div>
-        {episode ? (
-          <button
-            onClick={e => { e.stopPropagation(); onNavigateToBriefing() }}
-            style={{ width: 34, height: 34, borderRadius: '50%', background: '#2a5aaa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-          >
-            <Play size={14} color="#fff" fill="#fff" />
-          </button>
-        ) : (
-          <button
-            onClick={generate}
-            disabled={isGenerating}
-            style={{ width: 34, height: 34, borderRadius: '50%', background: isGenerating ? 'rgba(0,0,0,0.3)' : '#2a5aaa', border: 'none', cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: isGenerating ? 0.5 : 1 }}
-          >
-            {isGenerating ? <Mic size={14} color="var(--pol-t)" /> : <Play size={14} color="#fff" fill="#fff" />}
-          </button>
-        )}
-      </div>
-
-      {episode && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 9, color: 'var(--pol-border)', marginTop: 8, position: 'relative' }}>
-          <span>{episode.duration} Min.</span>
-        </div>
-      )}
+      {/* Chevron */}
+      <ChevronRight size={18} color="var(--pol-t)" style={{ flexShrink: 0, position: 'relative', zIndex: 1 }} />
     </div>
   )
 }

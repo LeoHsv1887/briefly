@@ -93,8 +93,8 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
       </div>
       <div style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.01em', marginBottom: 14 }}>{date}</div>
 
-      {/* All chips in one row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 18, flexWrap: 'wrap' }}>
+      {/* All chips in one row – never wraps */}
+      <div className="no-scrollbar" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 18, flexWrap: 'nowrap', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {weather && (() => {
           const WeatherIcon = getWeatherIcon(weather.weatherCode);
           return (
