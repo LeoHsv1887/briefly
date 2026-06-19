@@ -269,7 +269,7 @@ export default function App() {
           <div>
             {pullIndicator}
             {tickers.length > 0 && <div className="anim-2"><TickerBar tickers={tickers} /></div>}
-            <div className="anim-3"><PodcastBanner /></div>
+            <div className="anim-3"><PodcastBanner onNavigateToBriefing={() => goTo('briefing')} /></div>
 
             {loading ? (
               <div style={{ padding: '20px 18px 0' }}>

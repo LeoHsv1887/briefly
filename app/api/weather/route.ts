@@ -1,40 +1,64 @@
-import { NextResponse } from 'next/server';
-import type { WeatherData } from '@/lib/types';
+import { NextResponse } from 'next/server'
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic'
 
-const LAT = 51.9427;
-const LON = 7.9827;
+const DEFAULT_LAT = 51.9427
+const DEFAULT_LON = 7.9827
+const DEFAULT_CITY = 'Warendorf'
 
-export async function GET() {
+function getWeatherInfo(code: number): { icon: string; label: string } {
+  if (code === 0) return { icon: 'sun', label: 'Sonnig' }
+  if (code <= 2) return { icon: 'cloud-sun', label: 'Leicht bewölkt' }
+  if (code === 3) return { icon: 'cloud', label: 'Bewölkt' }
+  if (code <= 49) return { icon: 'cloud-fog', label: 'Neblig' }
+  if (code <= 59) return { icon: 'cloud-drizzle', label: 'Nieselregen' }
+  if (code <= 69) return { icon: 'cloud-rain', label: 'Regen' }
+  if (code <= 79) return { icon: 'snowflake', label: 'Schnee' }
+  if (code <= 84) return { icon: 'cloud-storm', label: 'Gewitter' }
+  return { icon: 'cloud', label: 'Wechselhaft' }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const latParam = searchParams.get('lat')
+  const lonParam = searchParams.get('lon')
+  const useCustom = latParam && lonParam
+  const lat = useCustom ? latParam : DEFAULT_LAT
+  const lon = useCustom ? lonParam : DEFAULT_LON
+
   try {
-    const url =
-      `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${LAT}&longitude=${LON}` +
-      `&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m` +
-      `&daily=temperature_2m_max,temperature_2m_min` +
-      `&timezone=Europe%2FBerlin&forecast_days=1`;
+    const weatherRes = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,weather_code,apparent_temperature&timezone=Europe%2FBerlin`,
+      { next: { revalidate: 1800 } }
+    )
+    const weatherData = await weatherRes.json()
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+    let city = DEFAULT_CITY
+    if (useCustom) {
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=de`,
+          { headers: { 'User-Agent': 'Briefly App' }, next: { revalidate: 3600 } }
+        )
+        const geoData = await geoRes.json()
+        city =
+          geoData.address?.city ||
+          geoData.address?.town ||
+          geoData.address?.village ||
+          geoData.address?.suburb ||
+          'Dein Standort'
+      } catch {}
+    }
 
-    const data = await res.json();
-    const c = data.current ?? {};
-    const d = data.daily ?? {};
+    const temp = Math.round(weatherData.current?.temperature_2m ?? 0)
+    const feelsLike = Math.round(weatherData.current?.apparent_temperature ?? 0)
+    const code = weatherData.current?.weather_code ?? 0
+    const { icon, label } = getWeatherInfo(code)
 
-    const weather: WeatherData = {
-      temperature: Math.round(c.temperature_2m ?? 0),
-      feelsLike: Math.round(c.apparent_temperature ?? 0),
-      weatherCode: c.weather_code ?? 0,
-      windSpeed: Math.round(c.wind_speed_10m ?? 0),
-      humidity: Math.round(c.relative_humidity_2m ?? 0),
-      tempMax: Math.round((d.temperature_2m_max ?? [0])[0] ?? 0),
-      tempMin: Math.round((d.temperature_2m_min ?? [0])[0] ?? 0),
-    };
-
-    return NextResponse.json({ weather });
+    return NextResponse.json({ city, temp, feelsLike, icon, label, weatherCode: code })
   } catch (err) {
-    console.error('Weather fetch error:', err);
-    return NextResponse.json({ weather: null, error: 'Weather unavailable' });
+    console.error('Weather fetch error:', err)
+    return NextResponse.json({ error: 'Weather unavailable' }, { status: 500 })
   }
 }

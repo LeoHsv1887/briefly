@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
+import { put, head } from '@vercel/blob'
 import { isMorningInGermany } from '@/lib/time'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +44,23 @@ export async function GET() {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     const isMorning = isMorningInGermany()
+    const type = isMorning ? 'morning' : 'evening'
+    const todayKey = new Date()
+      .toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' })
+      .replace(/\./g, '-')
+    const blobKey = `briefing-${type}-${todayKey}.json`
+    const blobUrl = `${process.env.NEXT_PUBLIC_BLOB_URL}/${blobKey}`
+
+    // Return cached briefing if already generated today
+    try {
+      await head(blobUrl)
+      const cached = await fetch(blobUrl, { cache: 'no-store' })
+      if (cached.ok) {
+        const data = await cached.json()
+        return NextResponse.json({ ...data, cached: true })
+      }
+    } catch {}
+
     const today = new Date().toLocaleDateString('de-DE', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       timeZone: 'Europe/Berlin',
@@ -289,29 +306,26 @@ Schreibe NUR den reinen Sprechtext.`
     console.log('[Podcast] Audio generated successfully,', audioBuffers.length, 'chunks')
 
     const metadata = {
+      success: true,
       title: `${isMorning ? 'Morning Brief' : 'Evening Brief'} · ${today}`,
       duration: Math.round(cleanScript.split(' ').length / 130),
       generatedAt: new Date().toISOString(),
-      type: isMorning ? 'morning' : 'evening',
+      type,
       audioBase64: combinedBase64,
       script: cleanScript,
+      cached: false,
     }
 
     try {
-      await put(
-        `podcast-meta-${isMorning ? 'morning' : 'evening'}.json`,
-        JSON.stringify(metadata),
-        { access: 'public', contentType: 'application/json', addRandomSuffix: false }
-      )
-      console.log('[Podcast] Metadata saved to Blob')
+      await put(blobKey, JSON.stringify(metadata), {
+        access: 'public', contentType: 'application/json', addRandomSuffix: false,
+      })
+      console.log('[Podcast] Metadata saved to Blob:', blobKey)
     } catch (e) {
       console.error('[Podcast] Blob save failed:', e)
     }
 
-    return NextResponse.json({
-      success: true,
-      ...metadata,
-    })
+    return NextResponse.json(metadata)
 
   } catch (error: any) {
     console.error('[Podcast] Fatal error:', error)

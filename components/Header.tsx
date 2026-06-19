@@ -16,9 +16,17 @@ function getGreeting(hour: number): string {
   return 'Gute Nacht';
 }
 
+interface WeatherInfo {
+  city: string;
+  temp: number;
+  icon: string;
+  label: string;
+}
+
 export default function Header({ dax, articleCount, settings }: HeaderProps) {
   const [date, setDate] = useState('');
   const [hour, setHour] = useState(new Date().getHours());
+  const [weather, setWeather] = useState<WeatherInfo | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -29,6 +37,25 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
     update();
     const interval = setInterval(update, 60_000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      fetch('/api/weather').then(r => r.json()).then(d => { if (!d.error) setWeather(d) }).catch(() => {});
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(`/api/weather?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+          const data = await res.json();
+          if (!data.error) setWeather(data);
+        } catch {}
+      },
+      () => {
+        fetch('/api/weather').then(r => r.json()).then(d => { if (!d.error) setWeather(d) }).catch(() => {});
+      }
+    );
   }, []);
 
   const greeting   = getGreeting(hour);
@@ -51,7 +78,22 @@ export default function Header({ dax, articleCount, settings }: HeaderProps) {
       <div style={{ fontSize: 26, fontWeight: 200, color: 'var(--t1)', lineHeight: 1.2, letterSpacing: '-0.03em', marginBottom: 5 }}>
         {greeting},<br />{firstName}.
       </div>
-      <div style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.01em', marginBottom: 14 }}>{date}</div>
+      <div style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.01em', marginBottom: weather ? 8 : 14 }}>{date}</div>
+      {weather && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: 12, color: 'var(--t3)',
+            background: 'var(--bg1)', border: '0.5px solid var(--border)',
+            borderRadius: 20, padding: '4px 10px',
+          }}>
+            <i className={`ti ti-${weather.icon}`} style={{ fontSize: 13 }} />
+            <span>{weather.temp}°C</span>
+            <span style={{ color: 'var(--t4)' }}>·</span>
+            <span style={{ color: 'var(--t4)' }}>{weather.city}</span>
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 18 }}>
         <div style={chipStyle}>
           <span className="live-dot" />

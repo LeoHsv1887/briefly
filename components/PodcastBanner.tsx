@@ -1,14 +1,15 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
-import { Play, Pause, Mic } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Play, Mic } from 'lucide-react'
 import { isMorningInGermany } from '@/lib/time'
 
-export function PodcastBanner() {
+interface PodcastBannerProps {
+  onNavigateToBriefing: () => void
+}
+
+export function PodcastBanner({ onNavigateToBriefing }: PodcastBannerProps) {
   const [episode, setEpisode] = useState<any>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const audioRef = useRef<HTMLAudioElement>(null)
 
   const isMorning = isMorningInGermany()
   const typeLabel = isMorning ? 'Morning Brief' : 'Evening Brief'
@@ -32,29 +33,10 @@ export function PodcastBanner() {
       const data = await res.json()
       if (data.success) {
         setEpisode(data)
-        if (audioRef.current && data.audioBase64) {
-          const byteChars = atob(data.audioBase64)
-          const byteArrays = []
-          for (let i = 0; i < byteChars.length; i += 512) {
-            const slice = byteChars.slice(i, i + 512)
-            const bytes = new Uint8Array(slice.length)
-            for (let j = 0; j < slice.length; j++) bytes[j] = slice.charCodeAt(j)
-            byteArrays.push(bytes)
-          }
-          const blob = new Blob(byteArrays, { type: 'audio/mpeg' })
-          audioRef.current.src = URL.createObjectURL(blob)
-          audioRef.current.load()
-        }
+        onNavigateToBriefing()
       }
     } catch (e) { console.error(e) }
     setIsGenerating(false)
-  }
-
-  function togglePlay() {
-    if (!audioRef.current) return
-    if (isPlaying) audioRef.current.pause()
-    else audioRef.current.play()
-    setIsPlaying(!isPlaying)
   }
 
   return (
@@ -69,7 +51,7 @@ export function PodcastBanner() {
             {typeLabel}
           </div>
           <div style={{ fontSize: 15, fontWeight: 300, color: 'var(--t2)', lineHeight: 1.3 }}>
-            {episode ? 'Dein Briefing anhören' : 'Briefing generieren'}
+            {episode ? 'Jetzt anhören' : 'Briefing generieren'}
           </div>
         </div>
       </div>
@@ -83,8 +65,8 @@ export function PodcastBanner() {
           ))}
         </div>
         {episode ? (
-          <button onClick={togglePlay} style={{ width: 34, height: 34, borderRadius: '50%', background: '#2a5aaa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {isPlaying ? <Pause size={14} color="#fff" /> : <Play size={14} color="#fff" fill="#fff" />}
+          <button onClick={onNavigateToBriefing} style={{ width: 34, height: 34, borderRadius: '50%', background: '#2a5aaa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Play size={14} color="#fff" fill="#fff" />
           </button>
         ) : (
           <button onClick={generate} disabled={isGenerating} style={{ width: 34, height: 34, borderRadius: '50%', background: isGenerating ? 'rgba(0,0,0,0.3)' : '#2a5aaa', border: 'none', cursor: isGenerating ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: isGenerating ? 0.5 : 1 }}>
@@ -94,21 +76,10 @@ export function PodcastBanner() {
       </div>
 
       {episode && (
-        <>
-          <div style={{ height: '2px', background: 'rgba(0,0,0,0.3)', borderRadius: 2, marginTop: 12 }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: '#2a5aaa', borderRadius: 2, transition: 'width 0.5s linear' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--pol-border)', marginTop: 4 }}>
-            <span>0:00</span>
-            <span>{episode.duration} Min.</span>
-          </div>
-        </>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 9, color: 'var(--pol-border)', marginTop: 8 }}>
+          <span>{episode.duration} Min.</span>
+        </div>
       )}
-
-      <audio ref={audioRef}
-        onTimeUpdate={() => { if (!audioRef.current) return; setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100 || 0) }}
-        onEnded={() => setIsPlaying(false)}
-      />
     </div>
   )
 }
