@@ -3,6 +3,7 @@ import type { Article } from './types';
 
 type MediaContent = { $?: { url?: string; medium?: string }; url?: string };
 type Enclosure = { url?: string; type?: string };
+type ItunesImage = { $?: { href?: string }; href?: string };
 
 type FeedItem = {
   title?: string;
@@ -12,6 +13,8 @@ type FeedItem = {
   isoDate?: string;
   contentSnippet?: string;
   content?: string;
+  rawDescription?: string;
+  itunesImage?: ItunesImage;
   mediaContent?: MediaContent | MediaContent[];
   mediaThumbnail?: MediaContent;
   enclosure?: Enclosure;
@@ -22,6 +25,8 @@ const parser = new Parser<Record<string, unknown>, FeedItem>({
     item: [
       ['media:content', 'mediaContent', { keepArray: false }],
       ['media:thumbnail', 'mediaThumbnail', { keepArray: false }],
+      ['itunes:image', 'itunesImage', { keepArray: false }],
+      ['description', 'rawDescription'],
     ],
   },
   timeout: 12000,
@@ -31,17 +36,45 @@ const parser = new Parser<Record<string, unknown>, FeedItem>({
   },
 });
 
+function firstImageFromHtml(html: string | undefined): string | null {
+  if (!html) return null;
+  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  const url = match?.[1];
+  if (url && /^https?:\/\//i.test(url) && !/pixel|track|spacer|1x1|blank\.gif/i.test(url)) return url;
+  return null;
+}
+
 function extractImageUrl(item: FeedItem): string | null {
+  // 1. media:content
   const mc = Array.isArray(item.mediaContent) ? item.mediaContent[0] : item.mediaContent;
   if (mc?.$?.url) return mc.$.url;
   if (mc?.url) return mc.url;
-  if (item.enclosure?.url) {
-    const t = item.enclosure.type ?? '';
-    if (!t || t.startsWith('image/')) return item.enclosure.url;
-  }
+
+  // 2. media:thumbnail
   const mt = item.mediaThumbnail;
   if (mt?.$?.url) return mt.$.url;
   if (mt?.url) return mt.url;
+
+  // 3. enclosure
+  if (item.enclosure?.url) {
+    const t = item.enclosure.type ?? '';
+    if (!t || t.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(item.enclosure.url)) {
+      return item.enclosure.url;
+    }
+  }
+
+  // 4. first <img> inside content:encoded
+  const fromContent = firstImageFromHtml(item.content);
+  if (fromContent) return fromContent;
+
+  // 5. first <img> inside the raw <description>
+  const fromDescription = firstImageFromHtml(item.rawDescription);
+  if (fromDescription) return fromDescription;
+
+  // 6. itunes:image
+  if (item.itunesImage?.$?.href) return item.itunesImage.$.href;
+  if (item.itunesImage?.href) return item.itunesImage.href;
+
   return null;
 }
 
@@ -167,11 +200,13 @@ export function filterByAge(articles: Article[], maxAgeHours = 36): Article[] {
   return articles.filter((a) => new Date(a.publishedAt) >= cutoff);
 }
 
+const MAX_ARTICLES_PER_SOURCE = 15;
+
 export async function fetchFeed(feed: { url: string; source: string; topic?: string; translate?: boolean }): Promise<Article[]> {
   try {
     const data = await parser.parseURL(feed.url);
     return (data.items || [])
-      .slice(0, 25)
+      .slice(0, MAX_ARTICLES_PER_SOURCE)
       .map((item): Article => {
         let title = (item.title || '').replace(/<[^>]+>/g, '').trim();
         let source = feed.source;

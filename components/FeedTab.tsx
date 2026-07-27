@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Article, TickerData } from '@/lib/types'
 import { getGreeting, getGermanDate, getGermanTime, isMorningInGermany } from '@/lib/time'
 import {
-  HeroCard, BriefingCard, TickerRow, FeatureCard, SplitPair, MarktInsight,
+  HeroCarousel, BriefingCard, TickerRow, FeatureCard, SplitPair, MarktInsight,
   CompactList, StreamDivider, OnArticleClick,
 } from '@/components/FeedCards'
 
@@ -12,6 +12,8 @@ interface Episode { available: boolean; type?: 'morning' | 'evening'; duration?:
 interface MarketBriefing { summary: string; sentiment: 'bullish' | 'bearish' | 'neutral' }
 
 const FILTERS = ['Alle', 'Wirtschaft', 'Politik', 'Tech', 'Startups', 'Münster', 'Lokal', 'Sport']
+const BATCH_SIZE = 20
+const CAROUSEL_SIZE = 5
 
 function matchFilter(article: Article, filter: string): boolean {
   const t = (article.topic ?? '').toLowerCase()
@@ -32,44 +34,57 @@ const chipStyle: React.CSSProperties = {
   borderRadius: 100, padding: '6px 12px', flexShrink: 0,
 }
 
-function buildStream(
-  hero: Article | undefined,
-  rest: Article[],
-  episode: Episode | null,
-  onNavigateToBriefing: () => void,
-  tickers: TickerData[],
-  briefing: MarketBriefing | null,
-  onArticleClick: OnArticleClick,
-): React.ReactNode[] {
-  const blocks: React.ReactNode[] = []
-  let k = 0
+function renderStream(articles: Article[], briefing: MarketBriefing | null, onArticleClick: OnArticleClick): React.ReactNode[] {
+  const elements: React.ReactNode[] = []
   let i = 0
+  let insertedMarktInsight = false
 
-  if (hero) blocks.push(<HeroCard key={k++} article={hero} onArticleClick={onArticleClick} />)
-  blocks.push(<BriefingCard key={k++} episode={episode} onNavigateToBriefing={onNavigateToBriefing} />)
-  if (tickers.length) blocks.push(<TickerRow key={k++} tickers={tickers} />)
+  while (i < articles.length) {
+    // 1. Feature Story
+    if (articles[i]) { elements.push(<FeatureCard key={`f-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
 
-  if (rest[i]) blocks.push(<FeatureCard key={k++} article={rest[i++]} onArticleClick={onArticleClick} />)
-  if (rest[i] && rest[i + 1]) { blocks.push(<SplitPair key={k++} articles={[rest[i], rest[i + 1]]} onArticleClick={onArticleClick} />); i += 2 }
-  if (briefing) blocks.push(<MarktInsight key={k++} summary={briefing.summary} sentiment={briefing.sentiment} />)
-  if (rest[i]) blocks.push(<FeatureCard key={k++} article={rest[i++]} onArticleClick={onArticleClick} />)
-  if (rest[i] && rest[i + 1]) { blocks.push(<SplitPair key={k++} articles={[rest[i], rest[i + 1]]} onArticleClick={onArticleClick} />); i += 2 }
+    // 2. Split Pair
+    if (articles[i] && articles[i + 1]) {
+      elements.push(<SplitPair key={`p-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
+      i += 2
+    }
 
-  if (rest[i]) blocks.push(<StreamDivider key={k++} label="Weitere Meldungen" />)
-  { const batch = rest.slice(i, i + 5); if (batch.length) blocks.push(<CompactList key={k++} articles={batch} onArticleClick={onArticleClick} />); i += batch.length }
+    // Markteinschätzung – once, right after the first pair
+    if (!insertedMarktInsight && briefing) {
+      elements.push(<MarktInsight key="markt-insight" summary={briefing.summary} sentiment={briefing.sentiment} />)
+      insertedMarktInsight = true
+    }
 
-  if (rest[i]) blocks.push(<StreamDivider key={k++} label="Mehr aus deinem Feed" />)
+    // 3. Feature Story
+    if (articles[i]) { elements.push(<FeatureCard key={`f2-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
 
-  while (i < rest.length) {
-    if (rest[i]) blocks.push(<FeatureCard key={k++} article={rest[i++]} onArticleClick={onArticleClick} />)
-    if (rest[i] && rest[i + 1]) { blocks.push(<SplitPair key={k++} articles={[rest[i], rest[i + 1]]} onArticleClick={onArticleClick} />); i += 2 }
-    else if (rest[i]) { blocks.push(<FeatureCard key={k++} article={rest[i++]} onArticleClick={onArticleClick} />) }
-    const batch = rest.slice(i, i + 5)
-    if (batch.length) blocks.push(<CompactList key={k++} articles={batch} onArticleClick={onArticleClick} />)
-    i += batch.length
+    // 4. Split Pair
+    if (articles[i] && articles[i + 1]) {
+      elements.push(<SplitPair key={`p2-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
+      i += 2
+    }
+
+    // 5. Compact List (5 Artikel)
+    if (articles[i]) {
+      const batch = articles.slice(i, i + 5)
+      elements.push(<StreamDivider key={`div-${i}`} label="Weitere Meldungen" />)
+      elements.push(<CompactList key={`list-${i}`} articles={batch} onArticleClick={onArticleClick} />)
+      i += batch.length
+    }
+
+    // 6. Feature Story
+    if (articles[i]) { elements.push(<FeatureCard key={`f3-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
+
+    // 7. Split Pair
+    if (articles[i] && articles[i + 1]) {
+      elements.push(<SplitPair key={`p3-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
+      i += 2
+    }
+
+    if (!articles[i]) break
   }
 
-  return blocks
+  return elements
 }
 
 interface FeedTabProps {
@@ -87,6 +102,8 @@ export function FeedTab({ articles, tickers, loading, username, onArticleClick, 
   const [weather, setWeather] = useState<WeatherInfo | null>(null)
   const [episode, setEpisode] = useState<Episode | null>(null)
   const [briefing, setBriefing] = useState<MarketBriefing | null>(null)
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   useEffect(() => {
     function load(lat?: number, lon?: number) {
@@ -116,8 +133,32 @@ export function FeedTab({ articles, tickers, loading, username, onArticleClick, 
   const daxChange = dax && dax.formattedValue !== '—' ? `${dax.isPositive ? '+' : ''}${dax.changePercent.toFixed(2)}%` : null
 
   const filtered = filter === 'Alle' ? articles : articles.filter(a => matchFilter(a, filter))
-  const hero = filtered[0]
-  const rest = filtered.slice(1)
+
+  const carouselArticles = [...filtered].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, CAROUSEL_SIZE)
+  const feedArticles = filtered.filter(a => !carouselArticles.some(c => c.id === a.id))
+
+  // Reset the infinite-scroll window whenever the filter or article set changes
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE)
+  }, [filter, articles])
+
+  useEffect(() => {
+    function handleScroll() {
+      const scrolled = window.scrollY + window.innerHeight
+      const total = document.documentElement.scrollHeight
+      if (scrolled > total - 800 && !isLoadingMore && visibleCount < feedArticles.length) {
+        setIsLoadingMore(true)
+        setTimeout(() => {
+          setVisibleCount(prev => Math.min(prev + BATCH_SIZE, feedArticles.length))
+          setIsLoadingMore(false)
+        }, 300)
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isLoadingMore, visibleCount, feedArticles.length])
+
+  const visibleArticles = feedArticles.slice(0, visibleCount)
 
   return (
     <div>
@@ -186,7 +227,23 @@ export function FeedTab({ articles, tickers, loading, username, onArticleClick, 
           <p style={{ fontSize: 14, color: 'var(--t3)' }}>Keine Artikel für diesen Filter.</p>
         </div>
       ) : (
-        buildStream(hero, rest, episode, onNavigateToBriefing, tickers, briefing, onArticleClick)
+        <>
+          <HeroCarousel articles={carouselArticles} onArticleClick={onArticleClick} />
+          <BriefingCard episode={episode} onNavigateToBriefing={onNavigateToBriefing} />
+          <TickerRow tickers={tickers} />
+          {renderStream(visibleArticles, briefing, onArticleClick)}
+
+          {isLoadingMore && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <span className="spinner" />
+            </div>
+          )}
+          {!isLoadingMore && visibleCount >= feedArticles.length && feedArticles.length > 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: 'var(--t4)' }}>
+              Alle {articles.length} Artikel geladen
+            </div>
+          )}
+        </>
       )}
 
       <div style={{ height: 20 }} />

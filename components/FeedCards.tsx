@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Article, TickerData } from '@/lib/types'
 import { getTopicColors, getTopicIcon, getTopicShortLabel } from '@/lib/topicColors'
 import { timeAgo } from '@/lib/time'
@@ -145,19 +145,22 @@ export function CardFooter({ article }: { article: Article }) {
 }
 
 // ─── Image placeholder helper ────────────────────────────────────────────────
+// Placeholder always renders behind the image so a broken/missing image never
+// leaves a blank hole — the colored topic icon shows through immediately.
 
 function ArticleImage({ article, iconSize }: { article: Article; iconSize: number }) {
+  const [imgError, setImgError] = useState(false)
   const colors = getTopicColors(article.topic)
-  if (article.imageUrl) {
-    return (
-      <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
-    )
-  }
   return (
-    <div style={{ width: '100%', height: '100%', background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: iconSize, color: colors.color, opacity: 0.3 }} />
-    </div>
+    <>
+      <div style={{ position: 'absolute', inset: 0, background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: iconSize, color: colors.color, opacity: 0.3 }} />
+      </div>
+      {article.imageUrl && !imgError && (
+        <img src={article.imageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setImgError(true)} />
+      )}
+    </>
   )
 }
 
@@ -211,6 +214,112 @@ export function HeroCard({ article, onArticleClick }: { article: Article; onArti
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── HeroCarousel ───────────────────────────────────────────────────────────
+
+export function HeroCarousel({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnArticleClick }) {
+  const [current, setCurrent] = useState(0)
+  const [dragStart, setDragStart] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startTimer = () => {
+    if (articles.length <= 1) return
+    timerRef.current = setInterval(() => {
+      setCurrent(prev => (prev + 1) % articles.length)
+    }, 4000)
+  }
+
+  const stopTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+  }
+
+  useEffect(() => {
+    setCurrent(0)
+    startTimer()
+    return stopTimer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articles.length])
+
+  function handleTouchStart(e: React.TouchEvent) {
+    setDragStart(e.touches[0].clientX)
+    stopTimer()
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    const diff = dragStart - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) setCurrent(prev => (prev + 1) % articles.length)
+      else setCurrent(prev => (prev - 1 + articles.length) % articles.length)
+    }
+    startTimer()
+  }
+
+  if (!articles.length) return null
+  const article = articles[current] ?? articles[0]
+  const isBreaking = isBreakingNews(article)
+
+  return (
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => click(article, onArticleClick)}
+      style={{ position: 'relative', cursor: 'pointer', userSelect: 'none' }}
+    >
+      <div style={{ height: 320, position: 'relative', overflow: 'hidden', background: 'var(--bg1)' }}>
+        <ArticleImage article={article} iconSize={80} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 20%, rgba(17,18,20,0.98) 100%)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 20px 16px', zIndex: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12, flexWrap: 'wrap' }}>
+            {isBreaking && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 9, fontWeight: 800,
+                letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 11px', borderRadius: 100,
+                background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '0.5px solid rgba(239,68,68,0.25)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+                Breaking
+              </div>
+            )}
+            <TopicPill topic={article.topic} />
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', lineHeight: 1.18, letterSpacing: '-0.03em', marginBottom: 14 }}>
+            {article.title}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {article.source}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>
+                {timeAgo(article.publishedAt)}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+              <KIButton article={article} variant="glass" />
+              <BookmarkButton article={article} variant="glass" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {articles.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 5, padding: '10px 0 4px' }}>
+          {articles.map((a, i) => (
+            <div
+              key={a.id}
+              onClick={e => { e.stopPropagation(); setCurrent(i); stopTimer(); startTimer() }}
+              style={{
+                width: i === current ? 18 : 5,
+                height: 5, borderRadius: i === current ? 3 : '50%',
+                background: i === current ? 'var(--t2)' : 'var(--bg3)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -374,12 +483,9 @@ export function CompactList({ articles, title = 'Weitere Meldungen', onArticleCl
               <span style={{ fontSize: 10, color: 'var(--t5)' }}>{timeAgo(article.publishedAt)}</span>
             </div>
           </div>
-          {article.imageUrl && (
-            <div style={{ width: 52, height: 52, borderRadius: 11, overflow: 'hidden', flexShrink: 0 }}>
-              <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={e => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }} />
-            </div>
-          )}
+          <div style={{ width: 52, height: 52, borderRadius: 11, overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+            <ArticleImage article={article} iconSize={20} />
+          </div>
         </div>
       ))}
     </div>
