@@ -4,6 +4,9 @@ export const TOPICS = [
   'Geopolitik',
   'Aktienmärkte',
   'Technologie & KI',
+  'Gründer & Startups',
+  'Münster & Region',
+  'Badbergen & Osnabrücker Land',
   'Sport',
 ] as const;
 

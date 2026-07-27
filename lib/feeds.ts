@@ -45,7 +45,7 @@ function extractImageUrl(item: FeedItem): string | null {
   return null;
 }
 
-export const FEEDS: Array<{ url: string; source: string }> = [
+export const FEEDS: Array<{ url: string; source: string; topic?: string; translate?: boolean }> = [
   { url: 'https://www.spiegel.de/schlagzeilen/index.rss', source: 'Spiegel' },
   { url: 'https://www.faz.net/rss/aktuell', source: 'FAZ' },
   { url: 'https://newsfeed.zeit.de/all', source: 'Zeit' },
@@ -106,6 +106,19 @@ export const FEEDS: Array<{ url: string; source: string }> = [
     url: 'https://news.google.com/rss/search?q=Formel+1+Tennis+NBA&hl=de&gl=DE&ceid=DE:de',
     source: 'Google News',
   },
+
+  // Gründer & Startups
+  { url: 'https://www.gruenderszene.de/feed', source: 'Gründerszene', topic: 'Gründer & Startups' },
+  { url: 'https://t3n.de/tag/startups/feed/', source: 't3n Startups', topic: 'Gründer & Startups' },
+  { url: 'https://www.eu-startups.com/feed/', source: 'EU-Startups', topic: 'Gründer & Startups', translate: true },
+
+  // Münster & Region
+  { url: 'https://www.wn.de/ms/rss', source: 'Westfälische Nachrichten', topic: 'Münster & Region' },
+  { url: 'https://www.ms-magazin.de/feed', source: 'MS-Magazin', topic: 'Münster & Region' },
+
+  // Badbergen & Osnabrücker Land
+  { url: 'https://www.noz.de/lokales/bersenbrueck/feed/rss.xml', source: 'NOZ Bersenbrück', topic: 'Badbergen & Osnabrücker Land' },
+  { url: 'https://www.lokalkompass.de/osnabrueck-land/rss/', source: 'Lokalkompass', topic: 'Badbergen & Osnabrücker Land' },
 ];
 
 function hashStr(s: string): string {
@@ -154,7 +167,7 @@ export function filterByAge(articles: Article[], maxAgeHours = 36): Article[] {
   return articles.filter((a) => new Date(a.publishedAt) >= cutoff);
 }
 
-export async function fetchFeed(feed: { url: string; source: string }): Promise<Article[]> {
+export async function fetchFeed(feed: { url: string; source: string; topic?: string; translate?: boolean }): Promise<Article[]> {
   try {
     const data = await parser.parseURL(feed.url);
     return (data.items || [])
@@ -175,7 +188,7 @@ export async function fetchFeed(feed: { url: string; source: string }): Promise<
           url: item.link || item.guid || '',
           source,
           publishedAt: item.isoDate || item.pubDate || new Date().toISOString(),
-          topic: 'Allgemein',
+          topic: feed.topic ?? 'Allgemein',
           score: 0,
           content: (item.contentSnippet || '').slice(0, 300),
           imageUrl: extractImageUrl(item),

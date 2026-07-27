@@ -1,59 +1,19 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Home, Mic, Newspaper, Settings as SettingsIcon, TrendingUp } from 'lucide-react';
-import Header from '@/components/Header';
-import { BriefingTab } from '@/components/BriefingTab';
-import { PodcastBanner } from '@/components/PodcastBanner';
-import TickerBar from '@/components/TickerBar';
+import { BottomNav, Tab } from '@/components/BottomNav';
+import { FeedTab } from '@/components/FeedTab';
 import { NewsTab } from '@/components/NewsTab';
-import StocksTab from '@/components/StocksTab';
-import { BookmarksTab } from '@/components/BookmarksTab';
-import { FeedSection } from '@/components/FeedSection';
-import TopStoriesCarousel from '@/components/TopStoriesCarousel';
-import { MarketBriefingCard } from '@/components/MarketBriefing';
+import { BriefingTab } from '@/components/BriefingTab';
+import { MaerkteTab } from '@/components/MaerkteTab';
 import SettingsPanel from '@/components/Settings';
 import { ArticleReader } from '@/components/ArticleReader';
+import { BookmarksTab } from '@/components/BookmarksTab';
+import { getBookmarks } from '@/lib/bookmarks';
 import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/profile';
 import type { Article, TickerData, Settings } from '@/lib/types';
 
-type Tab = 'feed' | 'news' | 'stocks' | 'bookmarks' | 'briefing' | 'settings';
-
-const TOP_TABS: Tab[] = ['feed', 'news', 'stocks', 'bookmarks', 'briefing', 'settings'];
-
-const TAB_LABELS: Record<Tab, string> = {
-  feed:      'Feed',
-  news:      'News',
-  stocks:    'Märkte',
-  bookmarks: 'Gespeichert',
-  briefing:  'Briefing',
-  settings:  'Einstellungen',
-};
-
-const BOTTOM_NAV: { Icon: React.ComponentType<{ size: number; strokeWidth: number }>; label: string; tab: Tab }[] = [
-  { Icon: Home,         label: 'Feed',     tab: 'feed'     },
-  { Icon: Newspaper,    label: 'News',     tab: 'news'     },
-  { Icon: Mic,          label: 'Briefing', tab: 'briefing' },
-  { Icon: TrendingUp,   label: 'Märkte',   tab: 'stocks'   },
-  { Icon: SettingsIcon, label: 'Settings', tab: 'settings' },
-];
-
 const PULL_THRESHOLD = 70;
-
-function SkeletonCard() {
-  return (
-    <div style={{ padding: '14px 15px', marginBottom: 8 }}>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ height: 9, background: '#111', borderRadius: 4, width: '40%', marginBottom: 8 }} />
-          <div style={{ height: 13, background: '#111', borderRadius: 4, width: '100%', marginBottom: 6 }} />
-          <div style={{ height: 13, background: '#111', borderRadius: 4, width: '75%' }} />
-        </div>
-        <div style={{ width: 72, height: 72, borderRadius: 12, background: '#0e0e0e', flexShrink: 0 }} />
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const [activeTab, setActiveTab]     = useState<Tab>('feed');
@@ -61,11 +21,11 @@ export default function App() {
   const [tickers, setTickers]         = useState<TickerData[]>([]);
   const [loading, setLoading]         = useState(true);
   const [settings, setSettings]       = useState<Settings>(DEFAULT_SETTINGS);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch]   = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [bookmarkCount, setBookmarkCount] = useState(0);
   const touchStartY = useRef<number | null>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
 
@@ -84,10 +44,20 @@ export default function App() {
 
   useEffect(() => {
     setSettings(getSettings());
+    setBookmarkCount(getBookmarks().length);
     fetchFeeds();
   }, []);
 
   const handleSettingsChange = (s: Settings) => { setSettings(s); saveSettings(s); };
+
+  function handleArticleClick(article: Article) {
+    setSelectedArticle(article);
+  }
+
+  function openBookmarks() {
+    setBookmarkCount(getBookmarks().length);
+    setShowBookmarks(true);
+  }
 
   // ── Pull-to-refresh handlers ──────────────────────────────────────────────
 
@@ -126,30 +96,6 @@ export default function App() {
     }
   }
 
-  // ── Derived data ──────────────────────────────────────────────────────────
-
-  const search = (a: Article) =>
-    !searchQuery ||
-    a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.source.toLowerCase().includes(searchQuery.toLowerCase());
-
-  const topArticles        = articles.filter(a => a.score >= 8 && search(a)).sort((a, b) => b.score - a.score).slice(0, 7);
-  const wirtschaftArticles = articles.filter(a => ['Wirtschaft & Finanzen', 'Aktienmärkte'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
-  const politikArticles    = articles.filter(a => ['Politik DE/EU', 'Geopolitik'].includes(a.topic) && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
-  const NON_SPORT_KEYWORDS = ['Parlament', 'Wiederwahl', 'Klima', 'CO2', 'CO₂', 'Regierung', 'Bundestag', 'Bundesrat', 'Minister', 'Wahl', 'Koalition', 'Gesetz', 'Haushalt', 'Zinsen', 'Inflation', 'EZB', 'Fed'];
-  const sportArticles      = articles.filter(a => a.topic === 'Sport' && search(a) && !NON_SPORT_KEYWORDS.some(kw => a.title.includes(kw))).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
-  const techArticles       = articles.filter(a => a.topic === 'Technologie & KI' && search(a)).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()).slice(0, 15);
-  const newsArticles       = [...articles].sort((a, b) => b.score - a.score).slice(0, 30);
-  const dax                = tickers.find(t => t.label === 'DAX' || t.symbol === '^GDAXI');
-
-  const goTo = (tab: Tab) => {
-    setActiveTab(tab);
-    setShowSearch(false);
-    setSearchQuery('');
-  };
-
-  // ── Pull indicator ────────────────────────────────────────────────────────
-
   const showPullIndicator = (pullDistance > 0 || isRefreshing) && activeTab === 'feed';
   const pullIndicator = showPullIndicator ? (
     <div style={{
@@ -158,147 +104,70 @@ export default function App() {
       overflow: 'hidden',
       transition: isRefreshing ? 'none' : 'height 0.1s',
     }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        opacity: isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1),
-      }}>
-        <div style={{
-          width: 16, height: 16, borderRadius: '50%',
-          border: '1.5px solid var(--border)',
-          borderTopColor: isRefreshing ? 'var(--t3)' : 'var(--border2)',
-          animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
-        }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: isRefreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1) }}>
+        <span className="spinner" style={{ animationPlayState: isRefreshing ? 'running' : 'paused' }} />
         <span style={{ fontSize: 11, color: 'var(--t3)' }}>
-          {isRefreshing
-            ? 'Wird aktualisiert…'
-            : pullDistance >= PULL_THRESHOLD
-              ? 'Loslassen zum Aktualisieren'
-              : 'Zum Aktualisieren ziehen'}
+          {isRefreshing ? 'Wird aktualisiert…' : pullDistance >= PULL_THRESHOLD ? 'Loslassen zum Aktualisieren' : 'Zum Aktualisieren ziehen'}
         </span>
       </div>
     </div>
   ) : null;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  const newsArticles = [...articles].sort((a, b) => b.score - a.score).slice(0, 40);
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+    <div style={{ background: 'var(--bg0)', minHeight: '100vh', maxWidth: 480, margin: '0 auto', position: 'relative' }}>
 
-      {/* Scroll container — owns scrollTop, touch handlers, and ref */}
+      {/* Status bar */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '14px 20px 0',
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(var(--bg0-rgb), 0.92)',
+        backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+      } as React.CSSProperties}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--t5)' }}>
+          Briefly
+        </span>
+        <div style={{ width: 1 }} />
+      </div>
+
+      {/* Scroll container */}
       <div
         ref={scrollRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+        style={{ paddingBottom: 96 }}
       >
-        {activeTab === 'feed' && <div className="anim-1"><Header dax={dax} articleCount={articles.length} settings={settings} /></div>}
-
-        {/* Top tab nav */}
-        <nav
-          className="no-scrollbar"
-          style={{
-            display: 'flex',
-            padding: '0 18px',
-            borderBottom: '1px solid var(--border2)',
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            position: 'sticky',
-            top: 0,
-            background: 'var(--bg0)',
-            zIndex: 10,
-          }}
-        >
-          {TOP_TABS.map(t => (
-            <div
-              key={t}
-              onClick={() => goTo(t)}
-              style={{
-                fontSize: 13,
-                fontWeight: activeTab === t ? 600 : 400,
-                color: activeTab === t ? '#ffffff' : 'var(--t3)',
-                padding: '14px 0',
-                marginRight: 22,
-                borderBottom: activeTab === t ? '2px solid #ffffff' : '2px solid transparent',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'color 0.15s ease',
-              }}
-            >
-              {TAB_LABELS[t]}
-            </div>
-          ))}
-        </nav>
-
-        {/* Search bar (Feed only) */}
-        {showSearch && activeTab === 'feed' && (
-          <div style={{ padding: '8px 18px', background: 'var(--bg-primary)', borderBottom: '0.5px solid #111' }}>
-            <input
-              autoFocus
-              type="search"
-              placeholder="Artikel durchsuchen…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: '#0e0e0e',
-                border: '0.5px solid #1a1a1a',
-                borderRadius: 10,
-                padding: '8px 12px',
-                fontSize: 13,
-                color: 'var(--text-primary)',
-                outline: 'none',
-              }}
-            />
-          </div>
+        {activeTab === 'feed' && (
+          <FeedTab
+            articles={articles}
+            tickers={tickers}
+            loading={loading}
+            username={settings.username.split(' ')[0] || 'Leonard'}
+            onArticleClick={handleArticleClick}
+            onNavigateToBriefing={() => setActiveTab('briefing')}
+            pullIndicator={pullIndicator}
+          />
         )}
-
-      <main style={{ paddingBottom: 80 }}>
-        {activeTab === 'settings' ? (
-          <SettingsPanel settings={settings} onChange={handleSettingsChange} />
-        ) : activeTab === 'bookmarks' ? (
-          <BookmarksTab onArticleClick={a => setSelectedArticle({ ...a, score: 0 })} />
-        ) : activeTab === 'stocks' ? (
-          <StocksTab />
-        ) : activeTab === 'news' ? (
-          <NewsTab articles={newsArticles} onArticleClick={setSelectedArticle} />
-        ) : activeTab === 'briefing' ? (
-          <BriefingTab />
-        ) : (
-          /* Feed */
-          <div>
-            {pullIndicator}
-            {tickers.length > 0 && <div className="anim-2"><TickerBar tickers={tickers} /></div>}
-            <div className="anim-3"><PodcastBanner onNavigateToBriefing={() => goTo('briefing')} /></div>
-
-            {loading ? (
-              <div style={{ padding: '20px 18px 0' }}>
-                <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 18, overflow: 'hidden' }}>
-                  {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="anim-4"><TopStoriesCarousel articles={topArticles} onArticleClick={setSelectedArticle} /></div>
-                <div className="anim-5"><MarketBriefingCard onPress={() => goTo('stocks')} /></div>
-                <div className="anim-6"><FeedSection title="Wirtschaft" articles={wirtschaftArticles} initialCount={7} onArticleClick={setSelectedArticle} /></div>
-                <FeedSection title="Politik" articles={politikArticles} initialCount={7} onArticleClick={setSelectedArticle} />
-                {techArticles.length > 0 && (
-                  <FeedSection title="Technologie & KI" articles={techArticles} initialCount={7} onArticleClick={setSelectedArticle} />
-                )}
-                {sportArticles.length > 0 && (
-                  <FeedSection title="Sport" articles={sportArticles} initialCount={7} onArticleClick={setSelectedArticle} />
-                )}
-                <div style={{ height: 20 }} />
-              </>
-            )}
-          </div>
+        {activeTab === 'news'     && <NewsTab articles={newsArticles} onArticleClick={handleArticleClick} />}
+        {activeTab === 'briefing' && <BriefingTab />}
+        {activeTab === 'maerkte'  && <MaerkteTab onArticleClick={handleArticleClick} />}
+        {activeTab === 'settings' && (
+          <SettingsPanel
+            settings={settings}
+            onChange={handleSettingsChange}
+            onOpenBookmarks={openBookmarks}
+            bookmarkCount={bookmarkCount}
+          />
         )}
-      </main>
-      </div>{/* end scroll container */}
+      </div>
 
-      {/* Article Reader overlay */}
+      {/* Bottom navigation */}
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* Article reader overlay */}
       {selectedArticle && (
         <ArticleReader
           article={selectedArticle}
@@ -307,61 +176,10 @@ export default function App() {
         />
       )}
 
-      {/* Bottom nav — fixed, lives outside the scroll container */}
-      <nav
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          padding: '10px 12px calc(10px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '1px solid var(--border2)',
-          background: 'var(--bg1)',
-          zIndex: 20,
-          boxShadow: '0 -8px 24px rgba(0,0,0,0.3)',
-        }}
-      >
-        {BOTTOM_NAV.map(({ Icon, label, tab }, i) => {
-          const isMiddle = i === 2;
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => goTo(tab)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 4,
-                color: isActive
-                  ? (isMiddle ? 'var(--pol-t)' : '#ffffff')
-                  : 'var(--t3)',
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.03em',
-                cursor: 'pointer',
-                background: isActive
-                  ? (isMiddle ? 'var(--pol-bg)' : 'var(--bg2)')
-                  : 'transparent',
-                border: isMiddle
-                  ? `0.5px solid ${isActive ? 'var(--pol-border)' : 'transparent'}`
-                  : 'none',
-                borderRadius: 14,
-                padding: isMiddle ? '8px 14px' : '6px 10px',
-                transform: isMiddle ? 'translateY(-2px)' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-              aria-label={label}
-            >
-              <Icon size={isMiddle ? 24 : 21} strokeWidth={1.6} />
-              <span>{label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* Bookmarks overlay */}
+      {showBookmarks && (
+        <BookmarksTab onClose={() => setShowBookmarks(false)} onArticleClick={handleArticleClick} />
+      )}
     </div>
   );
 }

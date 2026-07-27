@@ -4,7 +4,7 @@ import type { Article } from './types';
 
 type ScoreResult = { id: string; score: number; topic: string; title?: string };
 
-const ENGLISH_SOURCES = new Set(['TechCrunch', 'The Verge', 'Reuters', 'Economist', 'Wired']);
+const ENGLISH_SOURCES = new Set(['TechCrunch', 'The Verge', 'Reuters', 'Economist', 'Wired', 'EU-Startups']);
 
 async function scoreBatch(articles: Article[]): Promise<ScoreResult[]> {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -129,8 +129,9 @@ export async function scoreAndAssignTopics(articles: Article[]): Promise<Article
 
   return articles.map((a) => {
     const r = map.get(a.id);
+    const presetTopic = a.topic !== 'Allgemein' ? a.topic : undefined;
     let scored = r
-      ? { ...a, title: r.title ?? a.title, score: r.score, topic: r.topic }
+      ? { ...a, title: r.title ?? a.title, score: r.score, topic: presetTopic ?? r.topic }
       : { ...a, score: 4 };
     // Only boost clearly sport-specific titles — never override based on source alone
     if (SPORT_KEYWORDS.test(a.title)) {

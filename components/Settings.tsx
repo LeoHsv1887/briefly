@@ -1,149 +1,142 @@
-'use client';
-
-import { RotateCcw } from 'lucide-react';
-import type { Settings } from '@/lib/types';
-import { TOPICS, resetInterestProfile } from '@/lib/profile';
+'use client'
+import type { Settings } from '@/lib/types'
+import { TOPICS, resetInterestProfile } from '@/lib/profile'
+import { getTopicShortLabel } from '@/lib/topicColors'
 
 interface SettingsProps {
-  settings: Settings;
-  onChange: (s: Settings) => void;
+  settings: Settings
+  onChange: (s: Settings) => void
+  onOpenBookmarks?: () => void
+  bookmarkCount?: number
 }
 
-function Toggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      onClick={() => onChange(!checked)}
-      role="switch"
-      aria-checked={checked}
-      className="relative flex-shrink-0 w-10 h-5 rounded-full transition-colors focus:outline-none"
-      style={{ background: checked ? '#22c47a' : '#2a2a2a' }}
-    >
-      <span
-        className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
-        style={{ transform: checked ? 'translateX(20px)' : 'translateX(0)' }}
-      />
-    </button>
-  );
+    <div onClick={() => onChange(!checked)} role="switch" aria-checked={checked} style={{
+      position: 'relative', flexShrink: 0, width: 40, height: 24, borderRadius: 100, cursor: 'pointer',
+      background: checked ? 'var(--up)' : 'var(--bg3)', transition: 'background 0.15s ease',
+    }}>
+      <span style={{
+        position: 'absolute', top: 2, left: checked ? 18 : 2, width: 20, height: 20, borderRadius: '50%',
+        background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', transition: 'left 0.15s ease',
+      }} />
+    </div>
+  )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
-      <p className="text-[11px] font-semibold text-[#555] uppercase tracking-widest mb-3 px-4">
+    <div style={{ marginBottom: 22 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.09em', textTransform: 'uppercase', padding: '0 20px 8px' }}>
         {title}
-      </p>
-      <div className="bg-[#161616] border-y border-[#1e1e1e] divide-y divide-[#1e1e1e]">
+      </div>
+      <div style={{ margin: '0 14px', background: 'var(--bg1)', border: '0.5px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
         {children}
       </div>
     </div>
-  );
+  )
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({ label, children, isLast, onClick }: { label: string; children?: React.ReactNode; isLast?: boolean; onClick?: () => void }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-[14px] text-[#ccc]">{label}</span>
+    <div onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '13px 16px', borderBottom: isLast ? 'none' : '0.5px solid var(--line)',
+      cursor: onClick ? 'pointer' : 'default',
+    }}>
+      <span style={{ fontSize: 14, color: 'var(--t1)' }}>{label}</span>
       {children}
     </div>
-  );
+  )
 }
 
-export default function SettingsPanel({ settings, onChange }: SettingsProps) {
-  const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+export default function SettingsPanel({ settings, onChange, onOpenBookmarks, bookmarkCount = 0 }: SettingsProps) {
+  const update = (patch: Partial<Settings>) => onChange({ ...settings, ...patch })
 
   const toggleTopic = (topic: string) => {
-    const has = settings.enabledTopics.includes(topic);
+    const has = settings.enabledTopics.includes(topic)
     update({
       enabledTopics: has
-        ? settings.enabledTopics.filter((t) => t !== topic)
+        ? settings.enabledTopics.filter(t => t !== topic)
         : [...settings.enabledTopics, topic],
-    });
-  };
+    })
+  }
 
   return (
-    <div className="py-4">
+    <div>
+      <div style={{ padding: '16px 20px 18px' }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.03em' }}>Einstellungen</div>
+      </div>
+
       <Section title="Profil">
-        <div className="px-4 py-3">
-          <label className="text-[12px] text-[#555] block mb-1.5">Name</label>
+        <div style={{ padding: '13px 16px' }}>
+          <label style={{ fontSize: 11, color: 'var(--t4)', display: 'block', marginBottom: 6 }}>Name</label>
           <input
             type="text"
             value={settings.username}
-            onChange={(e) => update({ username: e.target.value })}
-            className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3 py-2 text-[14px] text-[#e8e8e8] placeholder:text-[#444] focus:outline-none focus:border-[#444]"
+            onChange={e => update({ username: e.target.value })}
             placeholder="Dein Name"
+            style={{
+              width: '100%', background: 'var(--bg2)', border: '0.5px solid var(--line)', borderRadius: 10,
+              padding: '9px 12px', fontSize: 14, color: 'var(--t1)', outline: 'none',
+            }}
           />
         </div>
       </Section>
 
+      <Section title="Gespeichert">
+        <Row label={`Deine Artikel${bookmarkCount ? ` (${bookmarkCount})` : ''}`} isLast onClick={onOpenBookmarks}>
+          <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--t4)' }} />
+        </Row>
+      </Section>
+
       <Section title="Themen">
-        {TOPICS.map((topic) => (
-          <Row key={topic} label={topic}>
-            <Toggle
-              checked={settings.enabledTopics.includes(topic)}
-              onChange={() => toggleTopic(topic)}
-            />
+        {TOPICS.map((topic, i) => (
+          <Row key={topic} label={getTopicShortLabel(topic)} isLast={i === TOPICS.length - 1}>
+            <Toggle checked={settings.enabledTopics.includes(topic)} onChange={() => toggleTopic(topic)} />
           </Row>
         ))}
       </Section>
 
       <Section title="Feed">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[14px] text-[#ccc]">Relevanz-Schwelle</span>
-            <span className="text-[14px] font-semibold text-[#e8e8e8]">{settings.minScore}</span>
+        <div style={{ padding: '13px 16px', borderBottom: '0.5px solid var(--line)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 14, color: 'var(--t1)' }}>Relevanz-Schwelle</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--t1)' }}>{settings.minScore}</span>
           </div>
           <input
-            type="range"
-            min={5}
-            max={9}
-            step={1}
-            value={settings.minScore}
-            onChange={(e) => update({ minScore: Number(e.target.value) })}
-            className="w-full h-1 rounded-full appearance-none bg-[#2a2a2a] cursor-pointer"
+            type="range" min={5} max={9} step={1} value={settings.minScore}
+            onChange={e => update({ minScore: Number(e.target.value) })}
+            style={{ width: '100%' }}
           />
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-[#444]">5 – Mehr Artikel</span>
-            <span className="text-[10px] text-[#444]">9 – Nur Top-Artikel</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <span style={{ fontSize: 10, color: 'var(--t4)' }}>5 – Mehr Artikel</span>
+            <span style={{ fontSize: 10, color: 'var(--t4)' }}>9 – Nur Top-Artikel</span>
           </div>
         </div>
-        <Row label="Zusammenfassungen auf Deutsch">
-          <Toggle
-            checked={settings.summariesInGerman}
-            onChange={(v) => update({ summariesInGerman: v })}
-          />
+        <Row label="Zusammenfassungen auf Deutsch" isLast>
+          <Toggle checked={settings.summariesInGerman} onChange={v => update({ summariesInGerman: v })} />
         </Row>
       </Section>
 
       <Section title="Interesse-Profil">
-        <div className="px-4 py-4">
-          <p className="text-[13px] text-[#666] mb-3 leading-relaxed">
-            Briefly lernt aus deinen Klicks, welche Themen dir wichtig sind. Das beeinflusst die
-            Sortierung deines Feeds.
+        <div style={{ padding: '14px 16px' }}>
+          <p style={{ fontSize: 12, color: 'var(--t3)', lineHeight: 1.6, marginBottom: 12 }}>
+            Briefly lernt aus deinen Klicks, welche Themen dir wichtig sind. Das beeinflusst die Sortierung deines Feeds.
           </p>
-          <button
-            onClick={() => {
-              resetInterestProfile();
-              alert('Interesse-Profil wurde zurückgesetzt.');
-            }}
-            className="flex items-center gap-2 text-[13px] text-[#e05a4b] hover:opacity-80 transition-opacity"
+          <div
+            onClick={() => { resetInterestProfile(); alert('Interesse-Profil wurde zurückgesetzt.') }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--dn)', cursor: 'pointer' }}
           >
-            <RotateCcw size={14} strokeWidth={2} />
+            <i className="ti ti-refresh" style={{ fontSize: 14 }} />
             Profil zurücksetzen
-          </button>
+          </div>
         </div>
       </Section>
 
-      <div className="px-4 mt-2 mb-8">
-        <p className="text-[11px] text-[#333] text-center">
-          Briefly · Powered by Claude AI
-        </p>
+      <div style={{ padding: '0 20px 32px', textAlign: 'center' }}>
+        <span style={{ fontSize: 11, color: 'var(--t5)' }}>Briefly · Powered by Claude AI</span>
       </div>
     </div>
-  );
+  )
 }

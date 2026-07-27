@@ -1,17 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Bookmark, Share2, ExternalLink, Sparkles, Lock } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { Article } from '@/lib/types'
 import { addBookmark, removeBookmark, isBookmarked } from '@/lib/bookmarks'
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 60) return `vor ${minutes} Min.`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `vor ${hours} Std.`
-  return `vor ${Math.floor(hours / 24)} Tagen`
-}
+import { getTopicColors, getTopicIcon } from '@/lib/topicColors'
+import { timeAgo } from '@/lib/time'
+import { TopicPill } from '@/components/FeedCards'
 
 interface Props {
   article: Article
@@ -19,23 +12,28 @@ interface Props {
   relatedArticles?: Article[]
 }
 
+function hostname(url: string, fallback: string): string {
+  try { return new URL(url).hostname.replace('www.', '') } catch { return fallback }
+}
+
 export function ArticleReader({ article, onClose, relatedArticles = [] }: Props) {
-  const [summary, setSummary]               = useState<string | null>(null)
-  const [summaryOpen, setSummaryOpen]       = useState(true)
+  const [summary, setSummary] = useState<string | null>(null)
   const [loadingSummary, setLoadingSummary] = useState(false)
-  const [bookmarked, setBookmarked]         = useState(false)
-  const [articleText, setArticleText]       = useState<string | null>(null)
-  const [isPaywall, setIsPaywall]           = useState(false)
-  const [loadingText, setLoadingText]       = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [articleText, setArticleText] = useState<string | null>(null)
+  const [isPaywall, setIsPaywall] = useState(false)
+  const [loadingText, setLoadingText] = useState(false)
+
+  const colors = getTopicColors(article.topic)
 
   useEffect(() => {
     setBookmarked(isBookmarked(article.id))
     setSummary(null)
-    setSummaryOpen(true)
     setArticleText(null)
     setIsPaywall(false)
     loadSummary()
     loadFullText()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.id])
 
   async function loadSummary() {
@@ -76,7 +74,6 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
   function toggleBookmark() {
     if (bookmarked) {
       removeBookmark(article.id)
-      setBookmarked(false)
     } else {
       addBookmark({
         id: article.id, title: article.title, url: article.url,
@@ -84,156 +81,111 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
         publishedAt: article.publishedAt, imageUrl: article.imageUrl ?? null,
         savedAt: new Date().toISOString(),
       })
-      setBookmarked(true)
     }
+    setBookmarked(b => !b)
   }
 
   function shareArticle() {
-    if (navigator.share) { navigator.share({ title: article.title, url: article.url }) }
-    else { navigator.clipboard?.writeText(article.url) }
-  }
-
-  function hostname(url: string): string {
-    try { return new URL(url).hostname.replace('www.', '') } catch { return article.source }
+    if (navigator.share) navigator.share({ title: article.title, url: article.url })
+    else navigator.clipboard?.writeText(article.url)
   }
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'var(--bg0)', zIndex: 100,
-      overflowY: 'auto', WebkitOverflowScrolling: 'touch' as React.CSSProperties['WebkitOverflowScrolling'],
-    }}>
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'var(--bg0)', overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+      animation: 'fadeSlideUp 0.3s ease both',
+    } as React.CSSProperties}>
 
-      {/* ── Vollbild Hero ── */}
-      <div style={{ height: 320, position: 'relative', overflow: 'hidden' }}>
-
+      {/* Hero */}
+      <div style={{ height: 320, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
         {article.imageUrl ? (
-          <img
-            src={article.imageUrl}
-            alt=""
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={e => (e.currentTarget.style.display = 'none')}
-          />
+          <img src={article.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={e => (e.currentTarget.style.display = 'none')} />
         ) : (
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#1a2a3a,#0a1828,#2a1a2a)' }} />
+          <div style={{ width: '100%', height: '100%', background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: 80, color: colors.color, opacity: 0.3 }} />
+          </div>
         )}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(17,18,20,0.98) 100%)' }} />
 
-        {/* Zurück + Actions – Glasmorphism */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          padding: '50px 18px 0',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%)',
-        }}>
-          <div onClick={onClose} style={{
-            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-            background: 'rgba(0,0,0,0.3)', borderRadius: 20,
-            padding: '6px 12px 6px 8px', backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
-          }}>
-            <ChevronLeft size={16} color="rgba(255,255,255,0.7)" />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Zurück</span>
+        <div style={{ position: 'absolute', top: 54, left: 16, right: 16, display: 'flex', justifyContent: 'space-between' }}>
+          <div onClick={onClose} style={{ width: 36, height: 36, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)', border: '0.5px solid rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } as React.CSSProperties}>
+            <i className="ti ti-arrow-left" style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <div onClick={toggleBookmark} style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            }}>
-              <Bookmark size={15} color={bookmarked ? '#2a5aaa' : 'rgba(255,255,255,0.6)'} fill={bookmarked ? '#2a5aaa' : 'none'} />
-            </div>
-            <div onClick={shareArticle} style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)' as React.CSSProperties['WebkitBackdropFilter'],
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            }}>
-              <Share2 size={15} color="rgba(255,255,255,0.6)" />
-            </div>
-          </div>
-        </div>
-
-        {/* Meta + Headline auf dem Bild */}
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 18px 18px',
-          background: 'linear-gradient(to top, rgba(6,6,6,1) 0%, rgba(6,6,6,0.7) 50%, transparent 100%)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: 9, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
+            <div onClick={toggleBookmark} style={{ width: 36, height: 36, borderRadius: '50%',
               background: 'rgba(255,255,255,0.1)', border: '0.5px solid rgba(255,255,255,0.15)',
-              borderRadius: 20, padding: '3px 9px', letterSpacing: '0.04em',
-              backdropFilter: 'blur(4px)',
-            }}>{article.topic}</span>
-            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{article.source}</span>
-            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{timeAgo(article.publishedAt)}</span>
-          </div>
-          <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif", fontSize: 20, fontWeight: 300, color: '#f2ede8', lineHeight: 1.3 }}>
-            {article.title}
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } as React.CSSProperties}>
+              <i className={`ti ${bookmarked ? 'ti-bookmark-filled' : 'ti-bookmark'}`} style={{ fontSize: 16, color: bookmarked ? 'var(--acc)' : 'rgba(255,255,255,0.7)' }} />
+            </div>
+            <div onClick={shareArticle} style={{ width: 36, height: 36, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.1)', border: '0.5px solid rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } as React.CSSProperties}>
+              <i className="ti ti-share" style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Content-Bereich ── */}
-      <div style={{ background: 'var(--bg0)', padding: '18px 22px 0' }}>
+      {/* Content */}
+      <div style={{ padding: '0 20px 40px' }}>
+        <TopicPill topic={article.topic} />
+        <div style={{ marginTop: 10, fontSize: 24, fontWeight: 800, color: 'var(--t1)', lineHeight: 1.25, letterSpacing: '-0.02em', marginBottom: 12 }}>
+          {article.title}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, paddingBottom: 20, borderBottom: '0.5px solid var(--line)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--t3)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{article.source}</span>
+          <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--line2)' }} />
+          <span style={{ fontSize: 12, color: 'var(--t3)' }}>{timeAgo(article.publishedAt)}</span>
+        </div>
 
         {/* KI-Zusammenfassung */}
-        <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '13px 14px', marginBottom: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: summaryOpen ? 10 : 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={11} color="#555" />
-              <span style={{ fontSize: 9, fontWeight: 500, color: '#444', letterSpacing: '0.06em', textTransform: 'uppercase' }}>KI-Zusammenfassung</span>
-            </div>
-            <span onClick={() => setSummaryOpen(o => !o)} style={{ fontSize: 10, color: 'var(--t4)', cursor: 'pointer' }}>
-              {summaryOpen ? 'Ausblenden' : 'Einblenden'}
-            </span>
+        <div style={{ background: 'var(--bg1)', border: '0.5px solid var(--line)', borderRadius: 16, padding: '14px 15px', marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <i className="ti ti-sparkles" style={{ fontSize: 12, color: 'var(--t3)' }} />
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>KI-Zusammenfassung</span>
           </div>
-          {summaryOpen && (
-            <div style={{ fontSize: 12, color: '#d8d4d0', lineHeight: 1.7 }}>
-              {loadingSummary
-                ? <span style={{ color: 'var(--t4)' }}>Zusammenfassung wird geladen…</span>
-                : (summary ?? <span style={{ color: 'var(--t4)' }}>Nicht verfügbar.</span>)
-              }
-            </div>
-          )}
+          <div style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.7 }}>
+            {loadingSummary
+              ? <span style={{ color: 'var(--t4)' }}>Zusammenfassung wird geladen…</span>
+              : (summary ?? <span style={{ color: 'var(--t4)' }}>Nicht verfügbar.</span>)}
+          </div>
         </div>
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <div style={{ flex: 1, height: '0.5px', background: 'var(--bg1)' }} />
-          <span style={{ fontSize: 9, color: 'var(--t4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <div style={{ flex: 1, height: '0.5px', background: 'var(--line)' }} />
+          <span style={{ fontSize: 10, color: 'var(--t4)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             {isPaywall ? 'Vorschau' : 'Vollständiger Artikel'}
           </span>
-          <div style={{ flex: 1, height: '0.5px', background: 'var(--bg1)' }} />
+          <div style={{ flex: 1, height: '0.5px', background: 'var(--line)' }} />
         </div>
 
-        {/* Paywall-Hinweis */}
         {isPaywall && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 10, padding: '9px 12px', marginBottom: 14 }}>
-            <Lock size={13} color="var(--t4)" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: 'var(--t4)', lineHeight: 1.4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg1)', border: '0.5px solid var(--line)', borderRadius: 12, padding: '10px 13px', marginBottom: 16 }}>
+            <i className="ti ti-lock" style={{ fontSize: 14, color: 'var(--t4)', flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: 'var(--t4)', lineHeight: 1.5 }}>
               Dieser Artikel ist teilweise hinter einer Paywall. Es wird so viel wie möglich angezeigt.
             </span>
           </div>
         )}
 
-        {/* Artikel-Text */}
         {loadingText ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '20px 0', marginBottom: 16 }}>
-            <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1.5px solid var(--border)', borderTopColor: 'var(--t4)', animation: 'spin 0.7s linear infinite' }} />
-            <span style={{ fontSize: 11, color: 'var(--t4)' }}>Artikel wird geladen…</span>
+            <span className="spinner" />
+            <span style={{ fontSize: 12, color: 'var(--t4)' }}>Artikel wird geladen…</span>
           </div>
         ) : articleText ? (
           <div style={{ marginBottom: 24 }}>
-            {articleText.split('\n\n').map((paragraph, i) =>
-              paragraph.trim().length > 0 && (
-                <p key={i} style={{ fontSize: 15, color: '#d8d4d0', lineHeight: 1.85, marginBottom: 16, fontWeight: 400 }}>
-                  {paragraph.trim()}
-                </p>
-              )
-            )}
+            {articleText.split('\n\n').map((p, i) => p.trim().length > 0 && (
+              <p key={i} style={{ fontSize: 15, color: 'var(--t2)', lineHeight: 1.85, marginBottom: 16 }}>{p.trim()}</p>
+            ))}
           </div>
         ) : (
           <div style={{ fontSize: 13, color: 'var(--t4)', lineHeight: 1.7, marginBottom: 20, fontStyle: 'italic' }}>
@@ -241,55 +193,54 @@ export function ArticleReader({ article, onClose, relatedArticles = [] }: Props)
           </div>
         )}
 
-        {/* Original-Link */}
-        <div
-          onClick={() => window.open(article.url, '_blank')}
-          style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, cursor: 'pointer' }}
-        >
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg1)', border: '0.5px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ExternalLink size={13} color="var(--t4)" />
+        {/* Original lesen */}
+        <a href={article.url} target="_blank" rel="noopener noreferrer" style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '13px 15px', borderRadius: 14, marginBottom: 28,
+          background: 'var(--bg1)', border: '0.5px solid var(--line)', textDecoration: 'none',
+        }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg2)', border: '0.5px solid var(--line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className="ti ti-external-link" style={{ fontSize: 13, color: 'var(--t4)' }} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'var(--t3)' }}>
+            <div style={{ fontSize: 12, color: 'var(--t2)' }}>
               {isPaywall ? 'Vollständigen Artikel lesen (Abo erforderlich)' : 'Artikel auf Originalseite öffnen'}
             </div>
-            <div style={{ fontSize: 9, color: 'var(--t4)', marginTop: 2 }}>{hostname(article.url)}</div>
+            <div style={{ fontSize: 10, color: 'var(--t4)', marginTop: 2 }}>{hostname(article.url, article.source)}</div>
           </div>
-          <ChevronRight size={13} color="var(--t4)" />
-        </div>
+          <i className="ti ti-chevron-right" style={{ fontSize: 14, color: 'var(--t4)' }} />
+        </a>
 
         {/* Ähnliche Artikel */}
         {relatedArticles.length > 0 && (
           <>
-            <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
               Ähnliche Artikel
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 40 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {relatedArticles.slice(0, 3).map(related => (
-                <div
-                  key={related.id}
-                  onClick={() => window.open(related.url, '_blank')}
-                  style={{ background: 'var(--bg1)', border: '0.5px solid var(--border)', borderRadius: 14, padding: '12px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
-                >
+                <a key={related.id} href={related.url} target="_blank" rel="noopener noreferrer" style={{
+                  background: 'var(--bg1)', border: '0.5px solid var(--line)', borderRadius: 14, padding: '12px 13px',
+                  display: 'flex', gap: 10, alignItems: 'flex-start', textDecoration: 'none',
+                }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 9, color: 'var(--t4)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+                    <div style={{ fontSize: 9, color: 'var(--t4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
                       {related.source} · {timeAgo(related.publishedAt)}
                     </div>
-                    <div style={{ fontSize: 12, color: '#d8d4d0', lineHeight: 1.4 }}>{related.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.4 }}>{related.title}</div>
                   </div>
                   <div style={{ width: 52, height: 52, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: 'var(--bg2)' }}>
-                    {related.imageUrl ? (
-                      <img src={related.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} onError={e => (e.currentTarget.style.display = 'none')} />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', background: 'var(--bg1)' }} />
+                    {related.imageUrl && (
+                      <img src={related.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={e => (e.currentTarget.style.display = 'none')} />
                     )}
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           </>
         )}
-
       </div>
     </div>
   )

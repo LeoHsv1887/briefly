@@ -31,8 +31,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de">
       <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css" />
       </head>
-      <body className="bg-[#0f0f0f] antialiased overscroll-none">
+      <body>
         {children}
         <SWRegister />
       </body>
