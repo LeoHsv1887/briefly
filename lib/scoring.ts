@@ -115,6 +115,11 @@ Antworte NUR als JSON-Array:
 // Only unambiguous sport terms — no source-based override to avoid misclassification
 const SPORT_KEYWORDS = /\b(bundesliga|champions league|dfb-pokal|formel 1|formula 1|\bnba\b|olympia\b|olympische|weltmeister|torschütze|tabellenführer|abstiegskampf|transfermarkt|spieltag|bundesliga-|cl-finale|ucl|dfl)\b/i;
 
+// Articles curated from local/community feeds (see lib/feeds.ts) can never win on
+// "national importance" under the strict scoring rubric above — without this floor
+// they'd always score below the 6-point publish threshold and never appear at all.
+const GUARANTEED_TOPICS = new Set(['Münster & Region', 'Badbergen & Osnabrücker Land']);
+
 export async function scoreAndAssignTopics(articles: Article[]): Promise<Article[]> {
   if (articles.length === 0) return [];
 
@@ -136,6 +141,10 @@ export async function scoreAndAssignTopics(articles: Article[]): Promise<Article
     // Only boost clearly sport-specific titles — never override based on source alone
     if (SPORT_KEYWORDS.test(a.title)) {
       scored = { ...scored, topic: 'Sport', score: Math.max(scored.score, 6) };
+    }
+    // Local/community feeds are curated by topic, not by national importance
+    if (presetTopic && GUARANTEED_TOPICS.has(presetTopic)) {
+      scored = { ...scored, score: Math.max(scored.score, 6) };
     }
     return scored;
   });

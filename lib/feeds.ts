@@ -29,7 +29,7 @@ const parser = new Parser<Record<string, unknown>, FeedItem>({
       ['description', 'rawDescription'],
     ],
   },
-  timeout: 12000,
+  timeout: 8000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (compatible; BrieflyBot/1.0)',
     Accept: 'application/rss+xml, application/xml, text/xml, */*',
@@ -85,12 +85,32 @@ export const FEEDS: Array<{ url: string; source: string; topic?: string; transla
   { url: 'https://www.handelsblatt.com/contentexport/feed/schlagzeilen', source: 'Handelsblatt' },
   { url: 'https://feeds.reuters.com/reuters/topNews', source: 'Reuters' },
   { url: 'https://www.economist.com/rss/the_world_this_week_rss.xml', source: 'Economist' },
-  { url: 'https://www.finanzen.net/rss/nachrichten', source: 'Finanzen.net' },
+  { url: 'https://www.finanzen.net/rss/nachrichten', source: 'Finanzen.net', topic: 'Aktienmärkte' },
   { url: 'https://www.kicker.de/news/rss/navigationsbereich/aktuell.rss', source: 'Kicker' },
   { url: 'https://www.sport1.de/news.rss', source: 'Sport1' },
   { url: 'https://techcrunch.com/feed', source: 'TechCrunch' },
   { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge' },
-  { url: 'https://www.heise.de/rss/heise-atom.xml', source: 'Heise' },
+  { url: 'https://www.heise.de/rss/heise-atom.xml', source: 'Heise', topic: 'Technologie & KI' },
+
+  // Wirtschaft & Finanzen
+  { url: 'https://www.faz.net/rss/aktuell/wirtschaft/', source: 'FAZ Wirtschaft', topic: 'Wirtschaft & Finanzen' },
+  { url: 'https://www.wiwo.de/rss-feeds/', source: 'WirtschaftsWoche', topic: 'Wirtschaft & Finanzen' },
+
+  // Politik
+  { url: 'https://www.spiegel.de/politik/index.rss', source: 'Spiegel Politik', topic: 'Politik DE/EU' },
+  { url: 'https://www.faz.net/rss/aktuell/politik/', source: 'FAZ Politik', topic: 'Politik DE/EU' },
+  { url: 'https://www.tagesschau.de/infoservices/alle-meldungen-100~rss2.xml', source: 'Tagesschau', topic: 'Politik DE/EU' },
+
+  // Geopolitik
+  { url: 'https://www.spiegel.de/ausland/index.rss', source: 'Spiegel Ausland', topic: 'Geopolitik' },
+  { url: 'https://www.faz.net/rss/aktuell/politik/ausland/', source: 'FAZ Ausland', topic: 'Geopolitik' },
+
+  // Technologie & KI
+  { url: 'https://rss.golem.de/rss.php', source: 'Golem', topic: 'Technologie & KI' },
+
+  // Aktienmärkte
+  { url: 'https://www.wallstreet-online.de/rss/nachrichten.xml', source: 'Wallstreet Online', topic: 'Aktienmärkte' },
+
   {
     url: 'https://news.google.com/rss/search?q=DAX+Aktienmarkt&hl=de&gl=DE&ceid=DE:de',
     source: 'Google News',
@@ -142,16 +162,25 @@ export const FEEDS: Array<{ url: string; source: string; topic?: string; transla
 
   // Gründer & Startups
   { url: 'https://www.gruenderszene.de/feed', source: 'Gründerszene', topic: 'Gründer & Startups' },
-  { url: 'https://t3n.de/tag/startups/feed/', source: 't3n Startups', topic: 'Gründer & Startups' },
   { url: 'https://www.eu-startups.com/feed/', source: 'EU-Startups', topic: 'Gründer & Startups', translate: true },
+  { url: 'https://www.deutsche-startups.de/feed/', source: 'Deutsche Startups', topic: 'Gründer & Startups' },
+  { url: 'https://startupvalley.news/de/feed/', source: 'Startup Valley', topic: 'Gründer & Startups' },
+  { url: 'https://financefwd.com/feed/', source: 'Finance Forward', topic: 'Gründer & Startups' },
 
-  // Münster & Region
-  { url: 'https://www.wn.de/ms/rss', source: 'Westfälische Nachrichten', topic: 'Münster & Region' },
-  { url: 'https://www.ms-magazin.de/feed', source: 'MS-Magazin', topic: 'Münster & Region' },
-
-  // Badbergen & Osnabrücker Land
-  { url: 'https://www.noz.de/lokales/bersenbrueck/feed/rss.xml', source: 'NOZ Bersenbrück', topic: 'Badbergen & Osnabrücker Land' },
-  { url: 'https://www.lokalkompass.de/osnabrueck-land/rss/', source: 'Lokalkompass', topic: 'Badbergen & Osnabrücker Land' },
+  // Münster & Region, Badbergen & Osnabrücker Land — kein Regionalblatt oben liefert
+  // ein funktionierendes öffentliches RSS mehr (WN/MS-Magazin/Münstersche Zeitung/NOZ/
+  // Lokalkompass wurden geprüft: 404, tote Verbindung oder Weiterleitung auf fremde
+  // Domains). Google News Suche ist der einzige zuverlässige Kanal für diese Themen.
+  {
+    url: 'https://news.google.com/rss/search?q=M%C3%BCnster+Lokales&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+    topic: 'Münster & Region',
+  },
+  {
+    url: 'https://news.google.com/rss/search?q=Osnabr%C3%BCck+Bersenbr%C3%BCck+Badbergen&hl=de&gl=DE&ceid=DE:de',
+    source: 'Google News',
+    topic: 'Badbergen & Osnabrücker Land',
+  },
 ];
 
 function hashStr(s: string): string {
@@ -201,10 +230,21 @@ export function filterByAge(articles: Article[], maxAgeHours = 36): Article[] {
 }
 
 const MAX_ARTICLES_PER_SOURCE = 15;
+const FETCH_HARD_TIMEOUT_MS = 9000;
+
+// rss-parser's own `timeout` option doesn't reliably abort connections that
+// stall mid-handshake (observed against a few dead regional-newspaper hosts) —
+// without this hard race, one stuck feed could hang the whole /api/feeds route.
+function withHardTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('hard timeout')), ms)),
+  ]);
+}
 
 export async function fetchFeed(feed: { url: string; source: string; topic?: string; translate?: boolean }): Promise<Article[]> {
   try {
-    const data = await parser.parseURL(feed.url);
+    const data = await withHardTimeout(parser.parseURL(feed.url), FETCH_HARD_TIMEOUT_MS);
     return (data.items || [])
       .slice(0, MAX_ARTICLES_PER_SOURCE)
       .map((item): Article => {

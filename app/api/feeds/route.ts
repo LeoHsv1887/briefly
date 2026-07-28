@@ -6,6 +6,12 @@ export const revalidate = 900;
 
 const MAX_ARTICLES_TOTAL = 150;
 
+// These topics only ever produce a handful of fresh candidates at any given
+// moment (a couple of local papers vs. dozens of national outlets). A flat
+// "most recent 150 overall" cutoff always loses that race to national news,
+// so their candidates are carved out and guaranteed a spot ahead of the cut.
+const RESERVED_TOPICS = new Set(['Münster & Region', 'Badbergen & Osnabrücker Land', 'Gründer & Startups']);
+
 export async function GET() {
   try {
     const results = await Promise.allSettled(FEEDS.map(fetchFeed));
@@ -17,7 +23,9 @@ export async function GET() {
     const unique = removeDuplicates(fresh);
     unique.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-    const toScore = unique.slice(0, MAX_ARTICLES_TOTAL);
+    const reserved = unique.filter((a) => RESERVED_TOPICS.has(a.topic));
+    const remaining = unique.filter((a) => !RESERVED_TOPICS.has(a.topic));
+    const toScore = [...reserved, ...remaining.slice(0, MAX_ARTICLES_TOTAL - reserved.length)];
     const scored = await scoreAndAssignTopics(toScore);
     const filtered = scored.filter((a) => a.score >= 6);
     const clustered = await clusterAndDeduplicate(filtered);

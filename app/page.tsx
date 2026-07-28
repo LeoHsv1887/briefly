@@ -113,8 +113,6 @@ export default function App() {
     </div>
   ) : null;
 
-  const newsArticles = [...articles].sort((a, b) => b.score - a.score).slice(0, 40);
-
   return (
     <div style={{ background: 'var(--bg0)', minHeight: '100vh', maxWidth: 480, margin: '0 auto', position: 'relative' }}>
 
@@ -151,7 +149,7 @@ export default function App() {
             pullIndicator={pullIndicator}
           />
         )}
-        {activeTab === 'news'     && <NewsTab articles={newsArticles} onArticleClick={handleArticleClick} />}
+        {activeTab === 'news'     && <NewsTab articles={articles} onArticleClick={handleArticleClick} />}
         {activeTab === 'briefing' && <BriefingTab />}
         {activeTab === 'maerkte'  && <MaerkteTab onArticleClick={handleArticleClick} />}
         {activeTab === 'settings' && (
