@@ -14,6 +14,7 @@ import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/profile';
 import type { Article, TickerData, Settings } from '@/lib/types';
 
 const PULL_THRESHOLD = 70;
+const STALE_MS = 5 * 60 * 1000; // don't auto-reload the feed more often than this
 
 export default function App() {
   const [activeTab, setActiveTab]     = useState<Tab>('feed');
@@ -22,12 +23,14 @@ export default function App() {
   const [loading, setLoading]         = useState(true);
   const [settings, setSettings]       = useState<Settings>(DEFAULT_SETTINGS);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastLoaded, setLastLoaded]   = useState<Date | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(0);
   const touchStartY = useRef<number | null>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
+  const didMountRef = useRef(false);
 
   async function fetchFeeds() {
     try {
@@ -37,8 +40,23 @@ export default function App() {
       ]);
       if (feedRes.status === 'fulfilled') setArticles(feedRes.value.articles ?? []);
       if (tickerRes.status === 'fulfilled') setTickers(tickerRes.value.tickers ?? []);
+      setLastLoaded(new Date());
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Reload the feed, but skip the network round-trip if we already refreshed
+  // recently — used for the "reload on tab switch" behavior so flipping
+  // between tabs doesn't refetch every single time.
+  async function refreshFeeds(force = false) {
+    if (isRefreshing) return;
+    if (!force && lastLoaded && Date.now() - lastLoaded.getTime() < STALE_MS) return;
+    setIsRefreshing(true);
+    try {
+      await fetchFeeds();
+    } finally {
+      setIsRefreshing(false);
     }
   }
 
@@ -47,6 +65,13 @@ export default function App() {
     setBookmarkCount(getBookmarks().length);
     fetchFeeds();
   }, []);
+
+  // Reload the feed whenever the user switches back to it, if it's gone stale.
+  useEffect(() => {
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    if (activeTab === 'feed') refreshFeeds();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleSettingsChange = (s: Settings) => { setSettings(s); saveSettings(s); };
 
@@ -147,6 +172,9 @@ export default function App() {
             onArticleClick={handleArticleClick}
             onNavigateToBriefing={() => setActiveTab('briefing')}
             pullIndicator={pullIndicator}
+            lastLoaded={lastLoaded}
+            isRefreshing={isRefreshing}
+            onRefresh={() => refreshFeeds(true)}
           />
         )}
         {activeTab === 'news'     && <NewsTab articles={articles} onArticleClick={handleArticleClick} />}

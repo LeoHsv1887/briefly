@@ -391,13 +391,24 @@ export function TickerRow({ tickers }: { tickers: TickerData[] }) {
 }
 
 // ─── FeatureCard ────────────────────────────────────────────────────────────
+// Two variants: a photo card when the article has a (working) image, and a
+// dedicated editorial text card when it doesn't — the text card reclaims the
+// space a broken/missing image would otherwise waste on an empty container.
 
 export function FeatureCard({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const hasImage = !!article.imageUrl && !imgFailed
+
+  if (!hasImage) {
+    return <FeatureCardTextOnly article={article} onArticleClick={onArticleClick} />
+  }
+
   return (
     <div onClick={() => click(article, onArticleClick)} style={{ margin: '8px 14px 0', borderRadius: 20, overflow: 'hidden',
       background: 'var(--bg1)', border: '0.5px solid var(--line)', cursor: 'pointer' }}>
       <div style={{ height: 190, position: 'relative', overflow: 'hidden' }}>
-        <ArticleImage article={article} iconSize={60} />
+        <img src={article.imageUrl!} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={() => setImgFailed(true)} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, var(--bg1) 100%)' }} />
         <div style={{ position: 'absolute', bottom: 12, left: 14 }}>
           <TopicPill topic={article.topic} />
@@ -419,37 +430,96 @@ export function FeatureCard({ article, onArticleClick }: { article: Article; onA
   )
 }
 
+function FeatureCardTextOnly({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
+  const colors = getTopicColors(article.topic)
+  return (
+    <div onClick={() => click(article, onArticleClick)} style={{
+      margin: '8px 14px 0', borderRadius: 20, overflow: 'hidden', position: 'relative',
+      background: 'var(--bg1)', border: '0.5px solid var(--line)', cursor: 'pointer',
+      padding: '18px 18px 16px 21px',
+    }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: colors.color, opacity: 0.4 }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        <TopicPill topic={article.topic} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{article.source}</span>
+        <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--t5)', flexShrink: 0 }} />
+        <span style={{ fontSize: 10, color: 'var(--t4)' }}>{timeAgo(article.publishedAt)}</span>
+      </div>
+
+      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--t1)', lineHeight: 1.22, letterSpacing: '-0.03em', marginBottom: 10 }}>
+        {article.title}
+      </div>
+
+      {article.content && (
+        <div style={{ fontSize: 14, color: 'var(--t2)', lineHeight: 1.65, marginBottom: 14 }}>
+          {article.content.slice(0, 180)}{article.content.length > 180 ? '…' : ''}
+        </div>
+      )}
+
+      <CardFooter article={article} />
+    </div>
+  )
+}
+
 // ─── SplitPair ──────────────────────────────────────────────────────────────
 
 export function SplitPair({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnArticleClick }) {
   return (
     <div style={{ display: 'flex', gap: 8, margin: '8px 14px 0', alignItems: 'stretch' }}>
       {articles.map(article => (
-        <div key={article.id} onClick={() => click(article, onArticleClick)} style={{
-          flex: 1, borderRadius: 18, overflow: 'hidden',
-          background: 'var(--bg1)', border: '0.5px solid var(--line)',
-          display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: 0,
+        <SplitPairItem key={article.id} article={article} onArticleClick={onArticleClick} />
+      ))}
+    </div>
+  )
+}
+
+function SplitPairItem({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const colors = getTopicColors(article.topic)
+  const hasImage = !!article.imageUrl && !imgFailed
+
+  return (
+    <div onClick={() => click(article, onArticleClick)} style={{
+      flex: 1, borderRadius: 18, overflow: 'hidden',
+      background: 'var(--bg1)', border: '0.5px solid var(--line)',
+      display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: 0,
+    }}>
+      {hasImage ? (
+        <div style={{ height: 100, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+          <img src={article.imageUrl!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={() => setImgFailed(true)} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, var(--bg1) 100%)' }} />
+          <div style={{ position: 'absolute', bottom: 8, left: 10 }}><TopicPill topic={article.topic} small /></div>
+        </div>
+      ) : (
+        <div style={{
+          height: 44, flexShrink: 0, background: colors.bg,
+          display: 'flex', alignItems: 'center', paddingLeft: 12,
+          borderBottom: `0.5px solid ${colors.border}`,
         }}>
-          <div style={{ height: 100, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-            <ArticleImage article={article} iconSize={38} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, var(--bg1) 100%)' }} />
-            <div style={{ position: 'absolute', bottom: 8, left: 10 }}><TopicPill topic={article.topic} small /></div>
-          </div>
-          <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 5 }}>
-                {article.source}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)', lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 8 }}>
-                {article.title}
-              </div>
+          <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: 18, color: colors.color, opacity: 0.6 }} />
+          <span style={{ fontSize: 9, fontWeight: 700, color: colors.color, marginLeft: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {getTopicShortLabel(article.topic)}
+          </span>
+        </div>
+      )}
+
+      <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div>
+          {!hasImage && (
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 5 }}>
+              {article.source} · {timeAgo(article.publishedAt)}
             </div>
-            <div onClick={e => e.stopPropagation()}>
-              <KIButton article={article} small onArticleClick={onArticleClick} />
-            </div>
+          )}
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)', lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 8 }}>
+            {article.title}
           </div>
         </div>
-      ))}
+        <div onClick={e => e.stopPropagation()}>
+          <KIButton article={article} small onArticleClick={onArticleClick} />
+        </div>
+      </div>
     </div>
   )
 }

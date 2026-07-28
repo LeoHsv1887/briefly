@@ -95,15 +95,32 @@ interface FeedTabProps {
   onArticleClick: OnArticleClick
   onNavigateToBriefing: () => void
   pullIndicator?: React.ReactNode
+  lastLoaded?: Date | null
+  isRefreshing?: boolean
+  onRefresh?: () => void
 }
 
-export function FeedTab({ articles, tickers, loading, username, onArticleClick, onNavigateToBriefing, pullIndicator }: FeedTabProps) {
+export function FeedTab({
+  articles, tickers, loading, username, onArticleClick, onNavigateToBriefing, pullIndicator,
+  lastLoaded, isRefreshing = false, onRefresh,
+}: FeedTabProps) {
   const [filter, setFilter] = useState('Alle')
   const [weather, setWeather] = useState<WeatherInfo | null>(null)
   const [episode, setEpisode] = useState<Episode | null>(null)
   const [briefing, setBriefing] = useState<MarketBriefing | null>(null)
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  // Greeting/date/time are wall-clock-dependent, so they must stay null until
+  // after mount — computing them during SSR too would make the server-rendered
+  // minute drift from the client's hydration-time minute and trigger a
+  // hydration mismatch. Ticking this also keeps the header clock live.
+  const [clock, setClock] = useState<Date | null>(null)
+
+  useEffect(() => {
+    setClock(new Date())
+    const id = setInterval(() => setClock(new Date()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     function load(lat?: number, lon?: number) {
@@ -164,11 +181,24 @@ export function FeedTab({ articles, tickers, loading, username, onArticleClick, 
     <div>
       {/* Header */}
       <div style={{ padding: '16px 20px 14px' }}>
-        <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: 4 }}>
-          {getGreeting()},<br />{username}.
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--t1)', letterSpacing: '-0.04em', lineHeight: 1.1 }}>
+            {clock ? getGreeting() : ' '},<br />{username}.
+          </div>
+          {onRefresh && (
+            <div onClick={onRefresh} style={{
+              width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+              background: 'var(--bg1)', border: '0.5px solid var(--line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: isRefreshing ? 'var(--acc)' : 'var(--t4)',
+            }}>
+              <i className={`ti ti-refresh ${isRefreshing ? 'spinning' : ''}`} style={{ fontSize: 16 }} />
+            </div>
+          )}
         </div>
         <div style={{ fontSize: 12, color: 'var(--t3)', marginBottom: 14 }}>
-          {getGermanDate()} · {getGermanTime()} Uhr
+          {clock ? `${getGermanDate()} · ${getGermanTime()} Uhr` : ' '}
+          {lastLoaded && ` · Aktualisiert ${lastLoaded.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`}
         </div>
 
         <div className="no-scrollbar" style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' }}>
