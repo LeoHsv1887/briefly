@@ -1,7 +1,9 @@
 'use client'
+import { useEffect, useState } from 'react'
 import type { Settings } from '@/lib/types'
 import { TOPICS, resetInterestProfile } from '@/lib/profile'
 import { getTopicShortLabel } from '@/lib/topicColors'
+import { getPushStatus, isPushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/push'
 
 interface SettingsProps {
   settings: Settings
@@ -62,6 +64,32 @@ export default function SettingsPanel({ settings, onChange, onOpenBookmarks, boo
     })
   }
 
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushDenied, setPushDenied] = useState(false)
+  const [pushSubscribed, setPushSubscribed] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+
+  useEffect(() => {
+    setPushSupported(isPushSupported())
+    getPushStatus().then(({ permission, isSubscribed }) => {
+      setPushDenied(permission === 'denied')
+      setPushSubscribed(isSubscribed)
+    })
+  }, [])
+
+  async function togglePush() {
+    if (pushBusy || pushDenied) return
+    setPushBusy(true)
+    if (pushSubscribed) {
+      await unsubscribeFromPush()
+      setPushSubscribed(false)
+    } else {
+      const ok = await subscribeToPush()
+      if (ok) setPushSubscribed(true)
+    }
+    setPushBusy(false)
+  }
+
   return (
     <div>
       <div style={{ padding: '16px 20px 18px' }}>
@@ -89,6 +117,32 @@ export default function SettingsPanel({ settings, onChange, onOpenBookmarks, boo
           <i className="ti ti-chevron-right" style={{ fontSize: 15, color: 'var(--t4)' }} />
         </Row>
       </Section>
+
+      {pushSupported && (
+        <Section title="Benachrichtigungen">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px' }}>
+            <div style={{ minWidth: 0, paddingRight: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)' }}>Breaking News</div>
+              <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 2 }}>
+                {pushDenied ? 'In den Browser-Einstellungen blockiert' : 'Push-Mitteilungen bei wichtigen Nachrichten'}
+              </div>
+            </div>
+            <div onClick={togglePush} role="switch" aria-checked={pushSubscribed} style={{
+              width: 44, height: 26, borderRadius: 13, flexShrink: 0,
+              background: pushSubscribed ? 'var(--acc)' : 'var(--bg3)',
+              position: 'relative', cursor: pushDenied ? 'not-allowed' : 'pointer',
+              opacity: pushDenied || pushBusy ? 0.5 : 1,
+              transition: 'background 0.2s',
+            }}>
+              <div style={{
+                position: 'absolute', top: 3, left: pushSubscribed ? 21 : 3,
+                width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }} />
+            </div>
+          </div>
+        </Section>
+      )}
 
       <Section title="Themen">
         {TOPICS.map((topic, i) => (

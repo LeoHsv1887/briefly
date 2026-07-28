@@ -33,3 +33,54 @@ self.addEventListener('fetch', (e) => {
       .catch(() => caches.match(request)),
   );
 });
+
+// ── Push notifications ──────────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    return;
+  }
+  const { title, body, url, icon, badge } = data;
+  if (!title) return;
+
+  const options = {
+    body,
+    icon: icon || '/icon-192.png',
+    badge: badge || '/icon-192.png',
+    data: { url: url || '/' },
+    vibrate: [100, 50, 100],
+    actions: [
+      { action: 'open', title: 'Artikel lesen' },
+      { action: 'close', title: 'Schließen' },
+    ],
+    requireInteraction: false,
+    silent: false,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  if (event.action === 'close') return;
+
+  const url = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.focus();
+          client.postMessage({ type: 'NAVIGATE', url });
+          return;
+        }
+      }
+      return clients.openWindow(url);
+    }),
+  );
+});

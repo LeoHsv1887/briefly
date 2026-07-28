@@ -9,6 +9,7 @@ import { MaerkteTab } from '@/components/MaerkteTab';
 import SettingsPanel from '@/components/Settings';
 import { ArticleReader } from '@/components/ArticleReader';
 import { BookmarksTab } from '@/components/BookmarksTab';
+import { PushManager } from '@/components/PushManager';
 import { getBookmarks } from '@/lib/bookmarks';
 import { getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/profile';
 import type { Article, TickerData, Settings } from '@/lib/types';
@@ -31,6 +32,7 @@ export default function App() {
   const touchStartY = useRef<number | null>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
   const didMountRef = useRef(false);
+  const deepLinkHandledRef = useRef(false);
 
   async function fetchFeeds() {
     try {
@@ -78,6 +80,36 @@ export default function App() {
   function handleArticleClick(article: Article) {
     setSelectedArticle(article);
   }
+
+  function openArticleById(id: string) {
+    const article = articles.find(a => a.id === id);
+    if (article) setSelectedArticle(article);
+  }
+
+  // Deep link from a push notification: ?article=<id> on initial load, or a
+  // NAVIGATE postMessage from the service worker if the app is already open.
+  useEffect(() => {
+    if (deepLinkHandledRef.current || articles.length === 0) return;
+    const id = new URLSearchParams(window.location.search).get('article');
+    if (id) {
+      openArticleById(id);
+      deepLinkHandledRef.current = true;
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articles]);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    function onMessage(event: MessageEvent) {
+      if (event.data?.type !== 'NAVIGATE') return;
+      const id = new URL(event.data.url, window.location.origin).searchParams.get('article');
+      if (id) openArticleById(id);
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articles]);
 
   function openBookmarks() {
     setBookmarkCount(getBookmarks().length);
@@ -206,6 +238,8 @@ export default function App() {
       {showBookmarks && (
         <BookmarksTab onClose={() => setShowBookmarks(false)} onArticleClick={handleArticleClick} />
       )}
+
+      <PushManager />
     </div>
   );
 }
