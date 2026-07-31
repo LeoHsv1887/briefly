@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { fetchFeed, removeDuplicates, filterByAge, FEEDS } from '@/lib/feeds';
 import { scoreAndAssignTopics, clusterAndDeduplicate } from '@/lib/scoring';
 
-export const revalidate = 900;
+// Always run the full fetch/score/cluster pipeline fresh. This route was
+// previously ISR-cached via `revalidate = 900`, which made Vercel's edge
+// serve a stale response for up to 15 minutes regardless of how many times
+// the client force-refreshed — `cache: 'no-store'` on the client fetch only
+// bypasses Next's own data cache, not an already-cached edge response.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const MAX_ARTICLES_TOTAL = 150;
 

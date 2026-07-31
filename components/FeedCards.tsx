@@ -390,17 +390,124 @@ export function TickerRow({ tickers }: { tickers: TickerData[] }) {
   )
 }
 
+// ─── TextCard ───────────────────────────────────────────────────────────────
+// The dedicated layout for imageless articles: fixed, predictable height via
+// line-clamping (no image slot, no empty boxes), a colored left rail in the
+// article's topic color, and a small topic icon up top. `compact` produces
+// the narrower variant used inside a SplitPair column.
+
+function TextCard({ article, onArticleClick, compact = false }: { article: Article; onArticleClick: OnArticleClick; compact?: boolean }) {
+  const colors = getTopicColors(article.topic)
+  const teaserChars = compact ? 90 : 180
+
+  return (
+    <div onClick={() => click(article, onArticleClick)} style={{
+      margin: compact ? undefined : '8px 14px 0',
+      flex: compact ? 1 : undefined,
+      minHeight: compact ? 176 : 220,
+      borderRadius: compact ? 18 : 20, overflow: 'hidden', position: 'relative',
+      background: 'var(--bg1)', border: '0.5px solid var(--line)', cursor: 'pointer',
+      padding: compact ? '14px 14px 12px 17px' : '18px 18px 16px 21px',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: colors.color }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginBottom: compact ? 8 : 12, flexWrap: 'wrap' }}>
+        <div style={{
+          width: compact ? 20 : 22, height: compact ? 20 : 22, borderRadius: 7, flexShrink: 0,
+          background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: compact ? 11 : 12, color: colors.color }} />
+        </div>
+        {!compact && <TopicPill topic={article.topic} />}
+      </div>
+
+      <div style={{
+        fontSize: compact ? 14 : 22, fontWeight: 800, color: 'var(--t1)',
+        lineHeight: compact ? 1.28 : 1.22, letterSpacing: '-0.02em', marginBottom: compact ? 6 : 10,
+        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+      }}>
+        {article.title}
+      </div>
+
+      {article.content && (
+        <div style={{
+          fontSize: compact ? 11.5 : 14, color: 'var(--t3)', lineHeight: 1.55, flex: 1,
+          marginBottom: compact ? 8 : 14,
+          display: '-webkit-box', WebkitLineClamp: compact ? 2 : 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
+          {article.content.slice(0, teaserChars)}{article.content.length > teaserChars ? '…' : ''}
+        </div>
+      )}
+
+      <div style={{ marginTop: 'auto' }}>
+        {compact ? (
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            {article.source} · {timeAgo(article.publishedAt)}
+          </span>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{article.source}</span>
+              <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--t5)', flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: 'var(--t4)' }}>{timeAgo(article.publishedAt)}</span>
+            </div>
+            <CardFooter article={article} />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── TickerBlock ────────────────────────────────────────────────────────────
+// Bundles 3-4 short, imageless, same-topic articles into one compact card
+// (headline + source + time, no teaser) instead of letting them spread out
+// as repetitive individual cards in the stream.
+
+export function TickerBlock({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnArticleClick }) {
+  if (!articles.length) return null
+  const colors = getTopicColors(articles[0].topic)
+  return (
+    <div style={{ margin: '8px 14px 0', borderRadius: 18, overflow: 'hidden', background: 'var(--bg1)', border: '0.5px solid var(--line)' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--line)', display: 'flex', alignItems: 'center', gap: 7 }}>
+        <i className={`ti ${getTopicIcon(articles[0].topic)}`} style={{ fontSize: 13, color: colors.color }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+          {getTopicShortLabel(articles[0].topic)} · Kurz-Updates
+        </span>
+      </div>
+      {articles.map((article, i) => (
+        <div key={article.id} onClick={() => click(article, onArticleClick)} style={{
+          padding: '11px 16px', cursor: 'pointer',
+          borderBottom: i < articles.length - 1 ? '0.5px solid var(--line)' : 'none',
+        }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--t1)', lineHeight: 1.32, letterSpacing: '-0.01em', marginBottom: 4 }}>
+            {article.title}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              {article.source}
+            </span>
+            <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--t5)', flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: 'var(--t5)' }}>{timeAgo(article.publishedAt)}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── FeatureCard ────────────────────────────────────────────────────────────
 // Two variants: a photo card when the article has a (working) image, and a
-// dedicated editorial text card when it doesn't — the text card reclaims the
-// space a broken/missing image would otherwise waste on an empty container.
+// TextCard when it doesn't — the text card reclaims the space a broken or
+// missing image would otherwise waste on an empty container.
 
 export function FeatureCard({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
   const [imgFailed, setImgFailed] = useState(false)
   const hasImage = !!article.imageUrl && !imgFailed
 
   if (!hasImage) {
-    return <FeatureCardTextOnly article={article} onArticleClick={onArticleClick} />
+    return <TextCard article={article} onArticleClick={onArticleClick} />
   }
 
   return (
@@ -430,91 +537,46 @@ export function FeatureCard({ article, onArticleClick }: { article: Article; onA
   )
 }
 
-function FeatureCardTextOnly({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
-  const colors = getTopicColors(article.topic)
-  return (
-    <div onClick={() => click(article, onArticleClick)} style={{
-      margin: '8px 14px 0', borderRadius: 20, overflow: 'hidden', position: 'relative',
-      background: 'var(--bg1)', border: '0.5px solid var(--line)', cursor: 'pointer',
-      padding: '18px 18px 16px 21px',
-    }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: colors.color, opacity: 0.4 }} />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <TopicPill topic={article.topic} />
-        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{article.source}</span>
-        <div style={{ width: 2, height: 2, borderRadius: '50%', background: 'var(--t5)', flexShrink: 0 }} />
-        <span style={{ fontSize: 10, color: 'var(--t4)' }}>{timeAgo(article.publishedAt)}</span>
-      </div>
-
-      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--t1)', lineHeight: 1.22, letterSpacing: '-0.03em', marginBottom: 10 }}>
-        {article.title}
-      </div>
-
-      {article.content && (
-        <div style={{ fontSize: 14, color: 'var(--t2)', lineHeight: 1.65, marginBottom: 14 }}>
-          {article.content.slice(0, 180)}{article.content.length > 180 ? '…' : ''}
-        </div>
-      )}
-
-      <CardFooter article={article} />
-    </div>
-  )
-}
-
 // ─── SplitPair ──────────────────────────────────────────────────────────────
+// Both items in a pair are decided together: if either article lacks an
+// image (or its image fails to load), BOTH render as compact TextCards, so a
+// photo card never ends up next to a text card in the same row.
 
 export function SplitPair({ articles, onArticleClick }: { articles: Article[]; onArticleClick: OnArticleClick }) {
+  const [failed, setFailed] = useState<Record<string, boolean>>({})
+  const bothHaveImages = articles.every(a => !!a.imageUrl && !failed[a.id])
+
   return (
     <div style={{ display: 'flex', gap: 8, margin: '8px 14px 0', alignItems: 'stretch' }}>
       {articles.map(article => (
-        <SplitPairItem key={article.id} article={article} onArticleClick={onArticleClick} />
+        bothHaveImages
+          ? <SplitPairImageItem key={article.id} article={article} onArticleClick={onArticleClick}
+              onImageError={() => setFailed(f => ({ ...f, [article.id]: true }))} />
+          : <TextCard key={article.id} article={article} onArticleClick={onArticleClick} compact />
       ))}
     </div>
   )
 }
 
-function SplitPairItem({ article, onArticleClick }: { article: Article; onArticleClick: OnArticleClick }) {
-  const [imgFailed, setImgFailed] = useState(false)
-  const colors = getTopicColors(article.topic)
-  const hasImage = !!article.imageUrl && !imgFailed
-
+function SplitPairImageItem({ article, onArticleClick, onImageError }: {
+  article: Article; onArticleClick: OnArticleClick; onImageError: () => void
+}) {
   return (
     <div onClick={() => click(article, onArticleClick)} style={{
       flex: 1, borderRadius: 18, overflow: 'hidden',
       background: 'var(--bg1)', border: '0.5px solid var(--line)',
       display: 'flex', flexDirection: 'column', cursor: 'pointer', minWidth: 0,
     }}>
-      {hasImage ? (
-        <div style={{ height: 100, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-          <img src={article.imageUrl!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={() => setImgFailed(true)} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, var(--bg1) 100%)' }} />
-          <div style={{ position: 'absolute', bottom: 8, left: 10 }}><TopicPill topic={article.topic} small /></div>
-        </div>
-      ) : (
-        <div style={{
-          height: 44, flexShrink: 0, background: colors.bg,
-          display: 'flex', alignItems: 'center', paddingLeft: 12,
-          borderBottom: `0.5px solid ${colors.border}`,
-        }}>
-          <i className={`ti ${getTopicIcon(article.topic)}`} style={{ fontSize: 18, color: colors.color, opacity: 0.6 }} />
-          <span style={{ fontSize: 9, fontWeight: 700, color: colors.color, marginLeft: 6, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {getTopicShortLabel(article.topic)}
-          </span>
-        </div>
-      )}
+      <div style={{ height: 100, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+        <img src={article.imageUrl!} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={onImageError} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, var(--bg1) 100%)' }} />
+        <div style={{ position: 'absolute', bottom: 8, left: 10 }}><TopicPill topic={article.topic} small /></div>
+      </div>
 
       <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div>
-          {!hasImage && (
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--t4)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 5 }}>
-              {article.source} · {timeAgo(article.publishedAt)}
-            </div>
-          )}
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)', lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 8 }}>
-            {article.title}
-          </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--t1)', lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 8 }}>
+          {article.title}
         </div>
         <div onClick={e => e.stopPropagation()}>
           <KIButton article={article} small onArticleClick={onArticleClick} />

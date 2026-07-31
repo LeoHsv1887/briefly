@@ -4,7 +4,7 @@ import type { Article, TickerData } from '@/lib/types'
 import { getGreeting, getGermanDate, getGermanTime, isMorningInGermany } from '@/lib/time'
 import {
   HeroCarousel, BriefingCard, TickerRow, FeatureCard, SplitPair, MarktInsight,
-  CompactList, StreamDivider, OnArticleClick,
+  CompactList, StreamDivider, TickerBlock, OnArticleClick,
 } from '@/components/FeedCards'
 
 interface WeatherInfo { temp: number; icon: string; city: string }
@@ -12,7 +12,7 @@ interface Episode { available: boolean; type?: 'morning' | 'evening'; duration?:
 interface MarketBriefing { summary: string; sentiment: 'bullish' | 'bearish' | 'neutral' }
 
 const FILTERS = ['Alle', 'Wirtschaft', 'Politik', 'Tech', 'Startups', 'Münster', 'Lokal', 'Sport']
-const BATCH_SIZE = 20
+const BATCH_SIZE = 45
 const CAROUSEL_SIZE = 5
 
 function matchFilter(article: Article, filter: string): boolean {
@@ -34,54 +34,61 @@ const chipStyle: React.CSSProperties = {
   borderRadius: 100, padding: '6px 12px', flexShrink: 0,
 }
 
+// A run of 3-4 consecutive, same-topic, imageless articles gets bundled into
+// one TickerBlock instead of being spread across individual Feature/SplitPair
+// slots — spread out, several imageless single cards in a row read as
+// repetitive filler; bundled, they read as an intentional "quick updates" list.
+function tickerRunLength(articles: Article[], i: number): number {
+  const eligible = (a?: Article) => !!a && !a.imageUrl
+  if (!eligible(articles[i]) || !eligible(articles[i + 1]) || !eligible(articles[i + 2])) return 0
+  const topic = articles[i].topic
+  if (articles[i + 1].topic !== topic || articles[i + 2].topic !== topic) return 0
+  if (eligible(articles[i + 3]) && articles[i + 3].topic === topic) return 4
+  return 3
+}
+
+const STREAM_PATTERN: Array<'feature' | 'pair' | 'list'> = ['feature', 'pair', 'feature', 'pair', 'list', 'feature', 'pair']
+
 function renderStream(articles: Article[], briefing: MarketBriefing | null, onArticleClick: OnArticleClick): React.ReactNode[] {
   const elements: React.ReactNode[] = []
   let i = 0
+  let slotIdx = 0
   let insertedMarktInsight = false
 
   while (i < articles.length) {
-    // 1. Feature Story
-    if (articles[i]) { elements.push(<FeatureCard key={`f-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
-
-    // 2. Split Pair
-    if (articles[i] && articles[i + 1]) {
-      elements.push(<SplitPair key={`p-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
-      i += 2
+    // Image availability decides the slot BEFORE a card type is committed to.
+    const run = tickerRunLength(articles, i)
+    if (run > 0) {
+      elements.push(<TickerBlock key={`tb-${articles[i].id}`} articles={articles.slice(i, i + run)} onArticleClick={onArticleClick} />)
+      i += run
+      continue
     }
 
-    // Markteinschätzung – once, right after the first pair
-    if (!insertedMarktInsight && briefing) {
-      elements.push(<MarktInsight key="markt-insight" summary={briefing.summary} sentiment={briefing.sentiment} />)
-      insertedMarktInsight = true
-    }
+    const slot = STREAM_PATTERN[slotIdx % STREAM_PATTERN.length]
+    slotIdx++
 
-    // 3. Feature Story
-    if (articles[i]) { elements.push(<FeatureCard key={`f2-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
-
-    // 4. Split Pair
-    if (articles[i] && articles[i + 1]) {
-      elements.push(<SplitPair key={`p2-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
-      i += 2
-    }
-
-    // 5. Compact List (5 Artikel)
-    if (articles[i]) {
+    if (slot === 'list') {
       const batch = articles.slice(i, i + 5)
       elements.push(<StreamDivider key={`div-${i}`} label="Weitere Meldungen" />)
       elements.push(<CompactList key={`list-${i}`} articles={batch} onArticleClick={onArticleClick} />)
       i += batch.length
+      continue
     }
 
-    // 6. Feature Story
-    if (articles[i]) { elements.push(<FeatureCard key={`f3-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />); i++ }
-
-    // 7. Split Pair
-    if (articles[i] && articles[i + 1]) {
-      elements.push(<SplitPair key={`p3-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
+    if (slot === 'pair' && articles[i + 1]) {
+      elements.push(<SplitPair key={`p-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
       i += 2
+      // Markteinschätzung – once, right after the first real pair
+      if (!insertedMarktInsight && briefing) {
+        elements.push(<MarktInsight key="markt-insight" summary={briefing.summary} sentiment={briefing.sentiment} />)
+        insertedMarktInsight = true
+      }
+      continue
     }
 
-    if (!articles[i]) break
+    // 'feature', or a 'pair' slot with only one article left
+    elements.push(<FeatureCard key={`f-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />)
+    i += 1
   }
 
   return elements
@@ -151,7 +158,15 @@ export function FeedTab({
 
   const filtered = filter === 'Alle' ? articles : articles.filter(a => matchFilter(a, filter))
 
-  const carouselArticles = [...filtered].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, CAROUSEL_SIZE)
+  // Hero is the largest visual slot in the feed, so articles with a working
+  // image are preferred; imageless articles only fill remaining slots if
+  // there aren't enough image articles to go around.
+  const carouselArticles = [...filtered]
+    .sort((a, b) => {
+      const imageDiff = (b.imageUrl ? 1 : 0) - (a.imageUrl ? 1 : 0)
+      return imageDiff !== 0 ? imageDiff : (b.score ?? 0) - (a.score ?? 0)
+    })
+    .slice(0, CAROUSEL_SIZE)
   const feedArticles = filtered.filter(a => !carouselArticles.some(c => c.id === a.id))
 
   // Reset the infinite-scroll window whenever the filter or article set changes
