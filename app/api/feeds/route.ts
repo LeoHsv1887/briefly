@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchFeed, removeDuplicates, filterByAge, FEEDS } from '@/lib/feeds';
-import { scoreAndAssignTopics, clusterAndDeduplicate } from '@/lib/scoring';
+import { scoreAndAssignTopics, computeClusterIds, applyClusters } from '@/lib/scoring';
 
 // Short ISR window: most opens get an instant, edge-cached response, but the
 // full fetch/score/cluster pipeline (several seconds) reruns at least every
@@ -34,10 +34,16 @@ export async function GET(request: Request) {
     const reserved = unique.filter((a) => RESERVED_TOPICS.has(a.topic));
     const remaining = unique.filter((a) => !RESERVED_TOPICS.has(a.topic));
     const toScore = [...reserved, ...remaining.slice(0, MAX_ARTICLES_TOTAL - reserved.length)];
-    const scored = await scoreAndAssignTopics(toScore);
-    const filtered = scored.filter((a) => a.score >= 6);
-    const clustered = await clusterAndDeduplicate(filtered);
-    const sorted = clustered
+    // Scoring and clustering are independent Anthropic calls over the same
+    // article list — run them in parallel instead of clustering only after
+    // scoring finishes, which used to add its full latency on top.
+    const [scored, clusterIds] = await Promise.all([
+      scoreAndAssignTopics(toScore),
+      computeClusterIds(toScore),
+    ]);
+    const deduped = applyClusters(scored, clusterIds);
+    const filtered = deduped.filter((a) => a.score >= 6);
+    const sorted = filtered
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, MAX_ARTICLES_TOTAL);
 

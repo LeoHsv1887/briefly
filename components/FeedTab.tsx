@@ -34,40 +34,47 @@ const chipStyle: React.CSSProperties = {
   borderRadius: 100, padding: '6px 12px', flexShrink: 0,
 }
 
-// A run of 3-4 consecutive, same-topic, imageless articles gets bundled into
-// one TickerBlock instead of being spread across individual Feature/SplitPair
-// slots — spread out, several imageless single cards in a row read as
-// repetitive filler; bundled, they read as an intentional "quick updates" list.
-function tickerRunLength(articles: Article[], i: number): number {
-  const eligible = (a?: Article) => !!a && !a.imageUrl
-  if (!eligible(articles[i]) || !eligible(articles[i + 1]) || !eligible(articles[i + 2])) return 0
-  const topic = articles[i].topic
-  if (articles[i + 1].topic !== topic || articles[i + 2].topic !== topic) return 0
-  if (eligible(articles[i + 3]) && articles[i + 3].topic === topic) return 4
-  return 3
+const STREAM_PATTERN: Array<'feature' | 'pair' | 'list'> = ['feature', 'pair', 'feature', 'pair', 'list', 'feature', 'pair']
+
+// Imageless articles never get a full-size solo slot (FeatureCard's and
+// SplitPair's imageless fallback is a big TextCard) — instead they're
+// deferred into this buffer and flushed as one bundle once enough have
+// accumulated, so the visible feed stays dominated by image cards. A bundle
+// that happens to share one topic reads better as a themed TickerBlock;
+// anything mixed falls back to the generic CompactList.
+const PENDING_FLUSH_SIZE = 4
+
+function flushPendingGroup(group: Article[], keySuffix: string, elements: React.ReactNode[], onArticleClick: OnArticleClick) {
+  if (!group.length) return
+  const sameTopic = group.length >= 3 && group.every(a => a.topic === group[0].topic)
+  if (sameTopic) {
+    elements.push(<TickerBlock key={`tb-${keySuffix}`} articles={group} onArticleClick={onArticleClick} />)
+  } else {
+    elements.push(<CompactList key={`cl-${keySuffix}`} title="Weitere Meldungen" articles={group} onArticleClick={onArticleClick} />)
+  }
 }
 
-const STREAM_PATTERN: Array<'feature' | 'pair' | 'list'> = ['feature', 'pair', 'feature', 'pair', 'list', 'feature', 'pair']
+// A pair slot looks a few articles ahead for a second image-bearing article
+// instead of giving up the moment the very next one lacks an image — small
+// enough to keep the feed feeling chronological, big enough to noticeably
+// raise how often two photo cards actually land side by side.
+const PAIR_LOOKAHEAD = 4
 
 function renderStream(articles: Article[], briefing: MarketBriefing | null, onArticleClick: OnArticleClick): React.ReactNode[] {
   const elements: React.ReactNode[] = []
   let i = 0
   let slotIdx = 0
   let insertedMarktInsight = false
+  let pending: Article[] = []
 
   while (i < articles.length) {
-    // Image availability decides the slot BEFORE a card type is committed to.
-    const run = tickerRunLength(articles, i)
-    if (run > 0) {
-      elements.push(<TickerBlock key={`tb-${articles[i].id}`} articles={articles.slice(i, i + run)} onArticleClick={onArticleClick} />)
-      i += run
-      continue
-    }
-
     const slot = STREAM_PATTERN[slotIdx % STREAM_PATTERN.length]
-    slotIdx++
 
     if (slot === 'list') {
+      // Tolerates imageless articles fine (small thumbnail + placeholder),
+      // so it draws straight from the sequential stream, unaffected by the
+      // deferral logic below.
+      slotIdx++
       const batch = articles.slice(i, i + 5)
       elements.push(<StreamDivider key={`div-${i}`} label="Weitere Meldungen" />)
       elements.push(<CompactList key={`list-${i}`} articles={batch} onArticleClick={onArticleClick} />)
@@ -75,22 +82,50 @@ function renderStream(articles: Article[], briefing: MarketBriefing | null, onAr
       continue
     }
 
-    if (slot === 'pair' && articles[i + 1]) {
-      elements.push(<SplitPair key={`p-${articles[i].id}`} articles={[articles[i], articles[i + 1]]} onArticleClick={onArticleClick} />)
-      i += 2
-      // Markteinschätzung – once, right after the first real pair
-      if (!insertedMarktInsight && briefing) {
-        elements.push(<MarktInsight key="markt-insight" summary={briefing.summary} sentiment={briefing.sentiment} />)
-        insertedMarktInsight = true
+    if (!articles[i].imageUrl) {
+      pending.push(articles[i])
+      i++
+      if (pending.length >= PENDING_FLUSH_SIZE) {
+        flushPendingGroup(pending, `p${i}`, elements, onArticleClick)
+        pending = []
       }
       continue
     }
 
-    // 'feature', or a 'pair' slot with only one article left
+    if (slot === 'pair') {
+      let j = i + 1
+      let scanned = 0
+      const skipped: Article[] = []
+      while (j < articles.length && scanned < PAIR_LOOKAHEAD && !articles[j].imageUrl) {
+        skipped.push(articles[j])
+        j++
+        scanned++
+      }
+      if (j < articles.length && articles[j].imageUrl) {
+        elements.push(<SplitPair key={`p-${articles[i].id}`} articles={[articles[i], articles[j]]} onArticleClick={onArticleClick} />)
+        pending.push(...skipped)
+        i = j + 1
+        slotIdx++
+        if (pending.length >= PENDING_FLUSH_SIZE) {
+          flushPendingGroup(pending, `p${i}`, elements, onArticleClick)
+          pending = []
+        }
+        // Markteinschätzung – once, right after the first real pair
+        if (!insertedMarktInsight && briefing) {
+          elements.push(<MarktInsight key="markt-insight" summary={briefing.summary} sentiment={briefing.sentiment} />)
+          insertedMarktInsight = true
+        }
+        continue
+      }
+      // No image-bearing partner nearby — fall through to a solo feature card.
+    }
+
     elements.push(<FeatureCard key={`f-${articles[i].id}`} article={articles[i]} onArticleClick={onArticleClick} />)
     i += 1
+    slotIdx++
   }
 
+  flushPendingGroup(pending, 'end', elements, onArticleClick)
   return elements
 }
 

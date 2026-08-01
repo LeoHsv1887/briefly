@@ -72,9 +72,13 @@ Mögliche Themen: ${TOPICS.join(', ')}`,
   }
 }
 
-export async function clusterAndDeduplicate(articles: Article[]): Promise<Article[]> {
-  if (articles.length === 0) return [];
-  if (!process.env.ANTHROPIC_API_KEY) return articles;
+// Cluster-ID assignment only needs titles, not scores — split out from the
+// score-based representative pick below so it can run concurrently with
+// scoreAndAssignTopics() instead of waiting for scores first. That parallel
+// run is what actually matters: two ~2-5s Haiku calls in sequence added up
+// to a large chunk of the /api/feeds worst case.
+export async function computeClusterIds(articles: Article[]): Promise<Map<number, string>> {
+  if (articles.length === 0 || !process.env.ANTHROPIC_API_KEY) return new Map();
 
   const client = new Anthropic();
   const prompt = `Du bekommst eine Liste von Nachrichtenartikeln. Identifiziere Artikel die dasselbe Ereignis oder Thema behandeln (auch wenn die Titel unterschiedlich formuliert sind). Gib für jeden Artikel eine Cluster-ID zurück.
@@ -88,28 +92,43 @@ Antworte NUR als JSON-Array:
   try {
     const msg = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
+      // This now runs concurrently with scoring on the full pre-filter list
+      // (up to MAX_ARTICLES_TOTAL articles), not the smaller post-filter
+      // list — 1000 tokens isn't enough to return an entry per article.
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     });
 
     const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
     const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return articles;
+    if (!match) return new Map();
 
     const clusters = JSON.parse(match[0]) as Array<{ index: number; clusterId: string }>;
-    const clusterMap = new Map<string, Article>();
-    for (const { index, clusterId } of clusters) {
-      const article = articles[index];
-      if (!article) continue;
-      const existing = clusterMap.get(clusterId);
-      if (!existing || article.score > existing.score) {
-        clusterMap.set(clusterId, article);
-      }
-    }
-    return Array.from(clusterMap.values());
-  } catch {
-    return articles;
+    return new Map(clusters.map(({ index, clusterId }) => [index, clusterId]));
+  } catch (e) {
+    console.error('Clustering error:', e);
+    return new Map();
   }
+}
+
+// Applies previously computed cluster IDs to a (now scored) article list,
+// keeping only the highest-scored article per cluster.
+export function applyClusters(articles: Article[], clusterIds: Map<number, string>): Article[] {
+  if (clusterIds.size === 0) return articles;
+  const clusterMap = new Map<string, Article>();
+  const unclustered: Article[] = [];
+  articles.forEach((article, index) => {
+    const clusterId = clusterIds.get(index);
+    if (!clusterId) {
+      unclustered.push(article);
+      return;
+    }
+    const existing = clusterMap.get(clusterId);
+    if (!existing || article.score > existing.score) {
+      clusterMap.set(clusterId, article);
+    }
+  });
+  return [...unclustered, ...Array.from(clusterMap.values())];
 }
 
 // Only unambiguous sport terms — no source-based override to avoid misclassification

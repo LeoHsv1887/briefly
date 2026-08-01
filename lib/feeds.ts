@@ -37,7 +37,7 @@ const parser = new Parser<Record<string, unknown>, FeedItem>({
       ['description', 'rawDescription'],
     ],
   },
-  timeout: 8000,
+  timeout: 5000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (compatible; BrieflyBot/1.0)',
     Accept: 'application/rss+xml, application/xml, text/xml, */*',
@@ -53,7 +53,8 @@ function firstImageFromHtml(html: string | undefined): string | null {
 }
 
 // Priority order: enclosure > media:content > media:thumbnail > inline <img>
-// in content:encoded/description. No og:image fallback — that would require
+// in content:encoded/description/content (RSS and Atom bodies alike). No
+// og:image fallback — that would require
 // fetching every article's HTML page during feed aggregation (hundreds of
 // extra requests per load), and no such batch mechanism exists today; the
 // only page-fetching route (`/api/article`) is a per-click, on-demand
@@ -85,7 +86,16 @@ function extractImageUrl(item: FeedItem): string | null {
   const fromDescription = firstImageFromHtml(item.rawDescription);
   if (fromDescription) return fromDescription;
 
-  // 6. itunes:image
+  // 6. first <img> inside `content` — Atom feeds (e.g. The Verge, Heise) put
+  // their body HTML directly in <content>, not <content:encoded>/<description>,
+  // so rss-parser's plain `content` field is the only place the image shows
+  // up. RSS feeds with a <description> tag overwrite `content` with plain
+  // text (see the comment on FeedItem.contentEncoded above), so this only
+  // ever adds coverage — it can't shadow field 4 or 5.
+  const fromAtomContent = firstImageFromHtml(item.content);
+  if (fromAtomContent) return fromAtomContent;
+
+  // 7. itunes:image
   if (item.itunesImage?.$?.href) return item.itunesImage.$.href;
   if (item.itunesImage?.href) return item.itunesImage.href;
 
@@ -244,7 +254,7 @@ export function filterByAge(articles: Article[], maxAgeHours = 36): Article[] {
 }
 
 const MAX_ARTICLES_PER_SOURCE = 25;
-const FETCH_HARD_TIMEOUT_MS = 9000;
+const FETCH_HARD_TIMEOUT_MS = 5500;
 
 // rss-parser's own `timeout` option doesn't reliably abort connections that
 // stall mid-handshake (observed against a few dead regional-newspaper hosts) —
