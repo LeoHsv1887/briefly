@@ -34,10 +34,12 @@ export default function App() {
   const didMountRef = useRef(false);
   const deepLinkHandledRef = useRef(false);
 
-  async function fetchFeeds() {
+  // `fresh` busts the API route's 90s ISR cache (via ?fresh=true) so manual
+  // refreshes always re-run the full pipeline instead of getting a cached hit.
+  async function fetchFeeds(fresh = false) {
     try {
       const [feedRes, tickerRes] = await Promise.allSettled([
-        fetch('/api/feeds', { cache: 'no-store' }).then(r => r.json()),
+        fetch(`/api/feeds${fresh ? '?fresh=true' : ''}`, { cache: 'no-store' }).then(r => r.json()),
         fetch('/api/tickers').then(r => r.json()),
       ]);
       if (feedRes.status === 'fulfilled') setArticles(feedRes.value.articles ?? []);
@@ -56,7 +58,7 @@ export default function App() {
     if (!force && lastLoaded && Date.now() - lastLoaded.getTime() < STALE_MS) return;
     setIsRefreshing(true);
     try {
-      await fetchFeeds();
+      await fetchFeeds(force);
     } finally {
       setIsRefreshing(false);
     }
@@ -141,7 +143,7 @@ export default function App() {
       touchStartY.current = null;
       try {
         await Promise.all([
-          fetchFeeds(),
+          fetchFeeds(true),
           new Promise<void>(r => setTimeout(r, 800)),
         ]);
       } finally {

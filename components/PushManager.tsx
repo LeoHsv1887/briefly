@@ -13,10 +13,13 @@ export function PushManager() {
     if (!isPushSupported()) return
     getPushStatus().then(({ permission }) => setPermission(permission))
 
-    if (Notification.permission === 'default') {
-      const timer = setTimeout(() => setShowPrompt(true), PROMPT_DELAY_MS)
-      return () => clearTimeout(timer)
-    }
+    // Auto-prompt disabled: Vercel Hobby cron only runs 1x/day, not the
+    // 3x/day this prompt promises. The toggle in Settings still lets anyone
+    // who wants push turn it on manually — nobody gets asked unprompted.
+    // if (Notification.permission === 'default') {
+    //   const timer = setTimeout(() => setShowPrompt(true), PROMPT_DELAY_MS)
+    //   return () => clearTimeout(timer)
+    // }
   }, [])
 
   async function handleSubscribe() {

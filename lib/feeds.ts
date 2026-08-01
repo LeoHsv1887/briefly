@@ -13,6 +13,13 @@ type FeedItem = {
   isoDate?: string;
   contentSnippet?: string;
   content?: string;
+  // rss-parser's built-in RSS handling always overwrites `content` with the
+  // plain <description> text when a <description> tag is present (see
+  // parseItemRss in rss-parser/lib/parser.js), even when <content:encoded>
+  // is also present — which is where most feeds actually put their inline
+  // image. This custom field captures the real content:encoded HTML under
+  // its own key so it survives that overwrite.
+  contentEncoded?: string;
   rawDescription?: string;
   itunesImage?: ItunesImage;
   mediaContent?: MediaContent | MediaContent[];
@@ -26,6 +33,7 @@ const parser = new Parser<Record<string, unknown>, FeedItem>({
       ['media:content', 'mediaContent', { keepArray: false }],
       ['media:thumbnail', 'mediaThumbnail', { keepArray: false }],
       ['itunes:image', 'itunesImage', { keepArray: false }],
+      ['content:encoded', 'contentEncoded'],
       ['description', 'rawDescription'],
     ],
   },
@@ -44,18 +52,14 @@ function firstImageFromHtml(html: string | undefined): string | null {
   return null;
 }
 
+// Priority order: enclosure > media:content > media:thumbnail > inline <img>
+// in content:encoded/description. No og:image fallback — that would require
+// fetching every article's HTML page during feed aggregation (hundreds of
+// extra requests per load), and no such batch mechanism exists today; the
+// only page-fetching route (`/api/article`) is a per-click, on-demand
+// full-text reader, not part of the aggregation pipeline.
 function extractImageUrl(item: FeedItem): string | null {
-  // 1. media:content
-  const mc = Array.isArray(item.mediaContent) ? item.mediaContent[0] : item.mediaContent;
-  if (mc?.$?.url) return mc.$.url;
-  if (mc?.url) return mc.url;
-
-  // 2. media:thumbnail
-  const mt = item.mediaThumbnail;
-  if (mt?.$?.url) return mt.$.url;
-  if (mt?.url) return mt.url;
-
-  // 3. enclosure
+  // 1. enclosure
   if (item.enclosure?.url) {
     const t = item.enclosure.type ?? '';
     if (!t || t.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(item.enclosure.url)) {
@@ -63,8 +67,18 @@ function extractImageUrl(item: FeedItem): string | null {
     }
   }
 
-  // 4. first <img> inside content:encoded
-  const fromContent = firstImageFromHtml(item.content);
+  // 2. media:content
+  const mc = Array.isArray(item.mediaContent) ? item.mediaContent[0] : item.mediaContent;
+  if (mc?.$?.url) return mc.$.url;
+  if (mc?.url) return mc.url;
+
+  // 3. media:thumbnail
+  const mt = item.mediaThumbnail;
+  if (mt?.$?.url) return mt.$.url;
+  if (mt?.url) return mt.url;
+
+  // 4. first <img> inside content:encoded (the real field — see FeedItem.contentEncoded)
+  const fromContent = firstImageFromHtml(item.contentEncoded);
   if (fromContent) return fromContent;
 
   // 5. first <img> inside the raw <description>
@@ -229,7 +243,7 @@ export function filterByAge(articles: Article[], maxAgeHours = 36): Article[] {
   return articles.filter((a) => new Date(a.publishedAt) >= cutoff);
 }
 
-const MAX_ARTICLES_PER_SOURCE = 15;
+const MAX_ARTICLES_PER_SOURCE = 25;
 const FETCH_HARD_TIMEOUT_MS = 9000;
 
 // rss-parser's own `timeout` option doesn't reliably abort connections that

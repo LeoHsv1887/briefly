@@ -2,15 +2,16 @@ import { NextResponse } from 'next/server';
 import { fetchFeed, removeDuplicates, filterByAge, FEEDS } from '@/lib/feeds';
 import { scoreAndAssignTopics, clusterAndDeduplicate } from '@/lib/scoring';
 
-// Always run the full fetch/score/cluster pipeline fresh. This route was
-// previously ISR-cached via `revalidate = 900`, which made Vercel's edge
-// serve a stale response for up to 15 minutes regardless of how many times
-// the client force-refreshed — `cache: 'no-store'` on the client fetch only
-// bypasses Next's own data cache, not an already-cached edge response.
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Short ISR window: most opens get an instant, edge-cached response, but the
+// full fetch/score/cluster pipeline (several seconds) reruns at least every
+// 90s so the feed never goes stale for long. `force-dynamic` (no caching at
+// all) made every single open slow. `?fresh=true` busts the edge cache for
+// the manual pull-to-refresh path — a distinct query string is a cache miss
+// on Vercel's edge regardless of the revalidate window, and the no-store
+// response header makes the intent explicit to any cache in between.
+export const revalidate = 90;
 
-const MAX_ARTICLES_TOTAL = 150;
+const MAX_ARTICLES_TOTAL = 220;
 
 // These topics only ever produce a handful of fresh candidates at any given
 // moment (a couple of local papers vs. dozens of national outlets). A flat
@@ -18,7 +19,8 @@ const MAX_ARTICLES_TOTAL = 150;
 // so their candidates are carved out and guaranteed a spot ahead of the cut.
 const RESERVED_TOPICS = new Set(['Münster & Region', 'Badbergen & Osnabrücker Land', 'Gründer & Startups']);
 
-export async function GET() {
+export async function GET(request: Request) {
+  const forceFresh = new URL(request.url).searchParams.get('fresh') === 'true';
   try {
     const results = await Promise.allSettled(FEEDS.map(fetchFeed));
     const allArticles = results
@@ -39,11 +41,10 @@ export async function GET() {
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       .slice(0, MAX_ARTICLES_TOTAL);
 
-    return NextResponse.json({
-      articles: sorted,
-      total: sorted.length,
-      fetchedAt: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      { articles: sorted, total: sorted.length, fetchedAt: new Date().toISOString() },
+      forceFresh ? { headers: { 'Cache-Control': 'no-store, must-revalidate' } } : undefined,
+    );
   } catch (err) {
     console.error('Feed aggregation error:', err);
     return NextResponse.json({ articles: [], total: 0, error: 'Feed fetch failed' }, { status: 500 });
